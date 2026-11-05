@@ -1,0 +1,15 @@
+# Pipeline only (GitHub Actions + local conda env `rainsure`, Python 3.12). Never installed on Render (DECISIONS.md D33, D42).
+# Generated with `pip freeze` in a clean env (PYTHONNOUSERSITE=1), Python 3.12.16, 2026-11-05.
+eccodes==2.50.0
+numpy==2.5.4
+xarray==2026.9.0
+# transitive
+attrs==26.1.0
+cffi==2.1.1
+findlibs==0.1.5
+packaging==26.3
+pandas==3.1.1
+pycparser==3.12
+python-dateutil==4.0.0
+six==1.17.0
+tzdata==2026.6
