@@ -108,6 +108,9 @@ DECIDED_ABOVE_PCT = 80.0  # ... or P > 80 %
 AGREE_MAX_DIFF_PCT = 20.0  # models agree if |P_IFS - P_AIFS| < 20 points
 STABLE_MAX_DIFF_PCT = 20.0  # stable if |P_now - P_previous run| < 20 points
 CONFIDENCE_BY_POINTS: dict[int, str] = {0: "low", 1: "low", 2: "medium", 3: "high"}
+# What users read for each level: how settled the forecast is, kept apart from the chance of rain (DECISIONS.md D51).
+SETTLED_TEXT_BY_POINTS: dict[int, str] = {0: "Forecast unsettled", 1: "Forecast unsettled",
+                                          2: "Forecast fairly settled", 3: "Forecast settled"}
 
 # --- IMD probability words (IMD Ahmedabad state bulletin 2026-11-04 legend p.3): Unlikely "less than 25%",
 # Likely "25% to 50%", Very likely "50% to 75 %", Most likely "more than 75%". IMD's ranges share 50 %; we give it
@@ -117,7 +120,8 @@ VERY_LIKELY_ABOVE_PCT = 50.0
 MOST_LIKELY_ABOVE_PCT = 75.0
 
 # --- IMD 24-h rain categories, lower bounds in mm (D16 sources), applied to the displayed value rounded to 0.1 mm.
-# Below 0.1 mm (shown as 0.0) we say "no rain"; IMD "very light" is trace-2.4 mm.
+# Below 0.1 mm (shown as 0.0) there is no category: a 0.0 median can hide up to 49 wet forecasts, so the sentence
+# counts forecasts instead (D51). IMD "very light" is trace-2.4 mm.
 RAIN_CATEGORIES_MM: tuple[tuple[float, str], ...] = (
     (204.5, "extremely heavy rain"), (115.6, "very heavy rain"), (64.5, "heavy rain"),
     (15.6, "moderate rain"), (2.5, "light rain"), (0.1, "very light rain"),
