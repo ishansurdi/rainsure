@@ -86,6 +86,12 @@ SOURCE_GRID = GridSpec(ni=1440, nj=721, lat_first=90.0, lon_first=180.0, step_de
 # (ecmwf.int open-data page); 4 date folders were seen live on 2026-11-05, so look back 4 days.
 ARCHIVE_LOOKBACK_H = 96
 
+# Plausibility ceiling for one 6-h block (mm): the world's greatest 12-hour point rainfall, 1144 mm, Foc-Foc,
+# La Reunion, 7-8 Jan 1966 (WMO "Records of Weather and Climate Extremes" table, as of 31 July 2025,
+# https://wmo.int/sites/default/files/2025-07/Table_Records_25Jul2025.pdf). A 0.25 deg grid-box 6-h value above
+# this is a decoding or unit error, not weather.
+MAX_RAIN_6H_MM = 1144.0
+
 
 class Box(NamedTuple):
     """Lat/lon box in degrees; longitudes in [-180, 180)."""

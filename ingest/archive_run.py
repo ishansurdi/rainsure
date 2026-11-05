@@ -11,7 +11,6 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-import numpy as np
 import xarray as xr
 
 from common import config
@@ -21,6 +20,7 @@ from common.time import blocks_for_run, recent_runs, validate_run_time
 from common.units import tp_to_mm
 from ingest.decode import decode_tp_members
 from ingest.fetch import DownloadError, fetch_tp_messages, file_url, http_get
+from ingest.validate import check_accumulated_tp
 
 log = logging.getLogger("archive")
 EXIT_NOT_PUBLISHED = 3  # lets the workflow tell "try later" apart from a real failure
@@ -69,10 +69,9 @@ def archive_model_run(run_time_utc: datetime, model: str, out_dir: Path) -> Path
     fetch_s = time.monotonic() - t0
     tp_all = xr.concat(fields, dim="step_h").assign_coords(step_h=steps).transpose("step_h", "member", "latitude", "longitude")
     tp_mm = tp_to_mm(tp_all)
-    if not bool(np.isfinite(tp_mm.values).all()):
-        raise ValueError(f"{model} {run_time_utc:%Y%m%d%H}: non-finite tp values")
-    if float(tp_mm.min()) < 0.0:  # accumulated from start: never negative in the source (min was 0 when checked)
-        raise ValueError(f"{model} {run_time_utc:%Y%m%d%H}: negative accumulated tp {float(tp_mm.min())} mm")
+    dips = check_accumulated_tp(tp_mm, packing_mm)  # raises on a bad run, so nothing is uploaded
+    log.info("%s %s: passed checks; %d values dip within packing tolerance (kept raw, clipped in processing)",
+             model, f"{run_time_utc:%Y%m%d%H}", dips)
     meta = {"stem": archive_stem(model, run_time_utc), "model": model, "run_time_utc": run_time_utc.isoformat(),
             "steps_h": steps, "members": int(tp_mm.sizes["member"]), "grib_units": sorted(grib_units),
             "packing_error_mm_max": packing_mm,  # per step, max over members; de-accumulation tolerance (D10)
