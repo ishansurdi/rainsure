@@ -32,7 +32,7 @@ Sources: [OD] https://www.ecmwf.int/en/forecasts/datasets/open-data ·
 
 - `tp` accumulation, verified by ecCodes decode of 20261104 00z member 1 (+AIFS control), steps 6/24/48: both models `stepType=accum`, `stepRange=0-6/0-24/0-48`, PDT 4.11, `typeOfStatisticalProcessing=1` → accumulated from forecast start.
 - **Units differ: IFS `m`, AIFS `kg m**-2` (mm).** GH's "m" applies to IFS only. Convert by reading the GRIB `units` key; unknown unit → error.
-- Differencing gives small negatives (packing): IFS ≥ −0.06 mm at ~1 % of points; AIFS −0.03/−0.06 mm (1/32, 1/16 mm steps).
+- Differencing gives small negatives (GRIB packing): IFS down to −0.122 mm (24→48 h, and 6→12 h in the India crop); AIFS −0.03/−0.06 mm. Corrected 2026-11-05: an earlier version of this line said "IFS ≥ −0.06 mm", which was wrong. Tolerance comes from `packingError` (D46).
 - Grid 721×1440, first point lat 90, **lon 180**, 0.25° → normalise longitudes before cropping.
 - Measured download, 10 days, 6-hourly, tp only, byte ranges (20261104): **00z 2,225 MB** (IFS 994 + AIFS 1,091 tp; 140 MB index files; 4,160 requests); **12z 2,371 MB** (4,368 requests). Global fields: cropping happens after download.
 - Retention: "most recent 12 forecast runs ... approximately 2–3 days" [OD]. LIVE showed 4 date folders on 5 Nov. → **Past forecasts must be archived by us** for any verification.
