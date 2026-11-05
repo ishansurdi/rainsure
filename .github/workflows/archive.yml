@@ -11,6 +11,8 @@ on:
     paths:
       - ".github/workflows/archive.yml"
       - "ingest/**"
+      - "process/**"
+      - "store/**"
       - "common/**"
       - "requirements-pipeline.txt"
 
@@ -77,3 +79,58 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           exit $failed
+
+  # Publish the newest complete archived run to Pages (DECISIONS.md D19, D52). Runs even if one archive run failed:
+  # a bad run is never archived, so the previous good run keeps being served.
+  publish:
+    needs: archive
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      pages: write # deploy-pages README: required
+      id-token: write # deploy-pages README: required
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PYTHONNOUSERSITE: "1"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: requirements-pipeline.txt
+
+      - name: Install pinned pipeline dependencies
+        run: pip install -r requirements-pipeline.txt
+
+      - name: Pick runs and build products
+        run: |
+          gh release view archive --json assets --jq '.assets[].name' > existing.txt
+          read run prev < <(python -m store.publish --pick --existing existing.txt)
+          echo "Publishing $run (previous $prev)"
+          gh release download archive -D dl -p "tp_*_${run}.*"
+          if [ "$prev" != "-" ]; then gh release download archive -D dl -p "tp_*_${prev}.*"; fi
+          python -m store.publish --archive-dir dl --run "$run" --prev "$prev" --site site
+          if [ -d frontend ]; then cp -r frontend/. site/; else
+            echo '<!doctype html><meta charset="utf-8"><title>rain-trust</title><p>Frontend coming soon. Data: <a href="data/latest.json">data/latest.json</a></p>' > site/index.html
+          fi
+          {
+            echo "## Published $run (previous $prev)"
+            echo '```'
+            du -sh site/data/$run/points site/data/$run/layers site
+            echo "tiles: $(ls site/data/$run/points | wc -l)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v5

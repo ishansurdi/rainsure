@@ -15,7 +15,12 @@ Status: approved; P0 and P1 done, P2 in progress.
 - [x] P1 archive: Actions job every 3 h saves each 00z/12z run (tp, 50 members, India) to release `archive`; 8 runs saved from 20261101 12z
 - [x] P1 validation before upload (D48); a bad run is not uploaded and is retried. "Keep serving the previous run" is part of the publish step (P2/P5)
 - [x] P2 process core: de-accumulate (D46 clip + log), app-day totals, member counts (D49 thresholds), pooled P, confidence checks; run end-to-end on real 20261104 00z/12z runs
-- [ ] P2 next: template sentences (wording to approve), block valid-time alignment for stability, packed layer writer (D44) + product metadata
+- [x] P2 wording: sentence templates with tested bounds, spread-out rain, settled/unsettled (D50, D51)
+- [x] Store: point tiles with finished sentences + map layers + metadata, previous run aligned by valid time; 1° tiles, 80 MB raw / 9.8 MB gzip per run, ≤ 28 kB gzip per answer (D52)
+- [x] API: FastAPI /meta, /point, /docs; reads published JSON only; tested import isolation (D42)
+- [x] Publish job: newest complete run → Pages after each archive pass (needs Pages source = GitHub Actions)
+- [ ] /district: needs a district boundary source + licence decision (not planned before 2026-11-05)
+- [ ] Deploy API to Render; frontend (P4)
 
 ## Verified data facts (checked 2026-11-05)
 Sources: [OD] https://www.ecmwf.int/en/forecasts/datasets/open-data ·
