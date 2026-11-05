@@ -92,6 +92,16 @@ ARCHIVE_LOOKBACK_H = 96
 # this is a decoding or unit error, not weather.
 MAX_RAIN_6H_MM = 1144.0
 
+# --- Rain thresholds (mm, inclusive lower bounds).
+# Event "rain" = 2.5 mm: IMD rainy day (IMD Pune glossary p.4); also IMD "light" lower bound (D15, D16).
+EVENT_MM = 2.5
+# Day totals use IMD 24-h category lower bounds: light 2.5, moderate 15.6, heavy 64.5 mm (IMD Ahmedabad state
+# bulletin 2026-11-04 legend p.3; RSMC New Delhi terminology pp.3-7; DECISIONS.md D16).
+DAY_THRESHOLDS_MM: tuple[float, ...] = (2.5, 15.6, 64.5)
+# 6-h blocks use only the event threshold: IMD categories are defined for 24 h, so e.g. 64.5 mm in 6 h is not
+# IMD "heavy" (DECISIONS.md D49).
+BLOCK_THRESHOLDS_MM: tuple[float, ...] = (EVENT_MM,)
+
 
 class Box(NamedTuple):
     """Lat/lon box in degrees; longitudes in [-180, 180)."""
