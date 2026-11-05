@@ -3,7 +3,7 @@
 Clock started: 2026-11-05 ~04:00 UTC (09:30 IST), first prompt of the session.
 Hard deadline: final commit by **2026-11-08 04:00 UTC (09:30 IST)**.
 Deliverables: public repo, live app, video.
-Status: **DRAFT — awaiting author review. No code until approved.**
+Status: approved; P0 and P1 done, P2 in progress.
 
 ## Status
 - [x] CLAUDE.md committed
@@ -11,7 +11,10 @@ Status: **DRAFT — awaiting author review. No code until approved.**
 - [x] Plan approved by author; open questions answered (2026-11-05, two reviews)
 - [x] P0: `common/config.py`, `common/time.py` + 12 tests (stdlib only)
 - [x] P0: `common/units.py`, `common/grid.py` + tests; Python 3.12 conda env `rainsure` (PYTHONNOUSERSITE=1), pins in requirements-pipeline.txt; 22 tests OK
-- [ ] P1 first checks on a GitHub runner: real fetch time (D36), AWS mirror (D34), and whether Linux ecCodes wheels pull extra packages (e.g. a bundled library wheel) that must be pinned
+- [x] P1 runner checks: fetch 7–9 MB/s, ~5 min per run (D36); AWS eu-central-1 works, Google fastest (D34); Linux pulls eccodeslib + eckitlib, pinned for Linux; archive ~65 MB per run (D47)
+- [x] P1 archive: Actions job every 3 h saves each 00z/12z run (tp, 50 members, India) to release `archive`; 8 runs saved from 20261101 12z
+- [x] P1 validation before upload (D48); a bad run is not uploaded and is retried. "Keep serving the previous run" is part of the publish step (P2/P5)
+- [ ] P2 process: de-accumulate (D46 clip + log), 6-h and day totals, probabilities, agreement, stability, confidence, template sentence
 
 ## Verified data facts (checked 2026-11-05)
 Sources: [OD] https://www.ecmwf.int/en/forecasts/datasets/open-data ·

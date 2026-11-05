@@ -13,3 +13,7 @@ pycparser==3.12
 python-dateutil==4.0.0
 six==1.17.0
 tzdata==2026.6
+# ecCodes C library wheels pulled by eccodes on Linux (runner_checks.json, Actions run 2, 2026-11-05).
+# Locally the library comes from the conda env, so these are Linux-only.
+eccodeslib==2.50.0.33; sys_platform == "linux"
+eckitlib==2.5.0.33; sys_platform == "linux"
