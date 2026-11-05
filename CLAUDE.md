@@ -98,3 +98,4 @@ If any answer is "not sure", investigate first. Do not guess.
 - Documentation and the code disagree, or two sources disagree.
 - A test fails and the fix is not obvious.
 - You are about to add a dependency, change the architecture, or change deployment.
+- Ask before editing CLAUDE.md, every time.
