@@ -10,7 +10,8 @@ Status: **DRAFT — awaiting author review. No code until approved.**
 - [x] ECMWF Open Data facts checked (section below)
 - [x] Plan approved by author; open questions answered (2026-11-05, two reviews)
 - [x] P0: `common/config.py`, `common/time.py` + 12 tests (stdlib only)
-- [ ] P0: `common/units.py`, `common/grid.py` + tests (needs numpy/xarray approval)
+- [x] P0: `common/units.py`, `common/grid.py` + tests; Python 3.12 conda env `rainsure` (PYTHONNOUSERSITE=1), pins in requirements-pipeline.txt; 22 tests OK
+- [ ] P1 first checks on a GitHub runner: real fetch time (D36), AWS mirror (D34), and whether Linux ecCodes wheels pull extra packages (e.g. a bundled library wheel) that must be pinned
 
 ## Verified data facts (checked 2026-11-05)
 Sources: [OD] https://www.ecmwf.int/en/forecasts/datasets/open-data ·
