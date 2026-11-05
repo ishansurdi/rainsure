@@ -23,6 +23,7 @@ from ingest.decode import decode_tp_members
 from ingest.fetch import DownloadError, fetch_tp_messages, file_url, http_get
 
 log = logging.getLogger("archive")
+EXIT_NOT_PUBLISHED = 3  # lets the workflow tell "try later" apart from a real failure
 
 
 def archive_steps(run_time_utc: datetime) -> list[int]:
@@ -108,7 +109,8 @@ def main() -> None:
     validate_run_time(run)
     for model in config.MODELS:
         if not run_available(run, model, config.SOURCE_ORDER[0]) and not run_available(run, model, config.SOURCE_ORDER[-1]):
-            raise SystemExit(f"{model} {a.run}: not (fully) published yet")
+            log.warning("%s %s: not (fully) published yet or already expired", model, a.run)
+            raise SystemExit(EXIT_NOT_PUBLISHED)
     for model in config.MODELS:
         archive_model_run(run, model, a.out)
 

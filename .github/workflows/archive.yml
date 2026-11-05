@@ -1,0 +1,93 @@
+# Save every 00z/12z ECMWF run (India tp, all members) to the `archive` release before ECMWF deletes it (~3 days).
+# DECISIONS.md D20, D47. Runs every 3 h; each run only fetches what is missing.
+name: archive
+
+on:
+  schedule:
+    - cron: "23 */3 * * *" # :23 avoids the top-of-hour load where GitHub delays/drops scheduled runs (GitHub docs)
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/archive.yml"
+      - "ingest/**"
+      - "common/**"
+      - "requirements-pipeline.txt"
+
+permissions:
+  contents: write # create the release and upload assets
+
+concurrency:
+  group: archive
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PYTHONNOUSERSITE: "1"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: requirements-pipeline.txt
+
+      - name: Install pinned pipeline dependencies
+        run: pip install -r requirements-pipeline.txt
+
+      - name: Runner checks (dependencies, ecCodes, mirrors)
+        run: |
+          {
+            echo "## Runner checks"
+            echo '```'
+            python --version
+            echo "--- pip freeze (compare with requirements-pipeline.txt)"
+            pip freeze
+            python -c "import eccodes, numpy, xarray; print('eccodes', eccodes.__version__, 'lib', eccodes.codes_get_api_version(), '| numpy', numpy.__version__, '| xarray', xarray.__version__)"
+            echo "--- mirrors: one IFS index file (~2 MB) from the latest 00z run"
+            day=$(date -u +%Y%m%d)
+            p="$day/00z/ifs/0p25/enfo/${day}000000-24h-enfo-ef.index"
+            for base in https://storage.googleapis.com/ecmwf-open-data https://data.ecmwf.int/forecasts \
+                        https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com https://ecmwf-forecasts.s3.amazonaws.com; do
+              curl -s --connect-timeout 10 -m 60 -o idx -w "%{http_code} %{size_download}B %{time_total}s  " "$base/$p" || true
+              echo "$( [ -s idx ] && md5sum < idx | cut -c1-8 )  $base"; rm -f idx
+            done
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Make sure the archive release exists
+        run: |
+          gh release view archive > /dev/null 2>&1 || gh release create archive --title "Forecast archive" \
+            --notes "Accumulated tp (mm) for India, all 50 members, 6-hourly steps, per 00z/12z run. Built by .github/workflows/archive.yml. ECMWF open data, CC BY 4.0."
+
+      - name: Archive pending runs
+        run: |
+          gh release view archive --json assets --jq '.assets[].name' > existing.txt
+          python -m ingest.archive_run --pending --existing existing.txt > pending.txt
+          echo "Pending runs: $(tr '\n' ' ' < pending.txt)"
+          failed=0
+          for run in $(cat pending.txt); do
+            rm -rf out
+            set +e; python -m ingest.archive_run --run "$run" --out out 2>&1 | tee -a run.log; code=${PIPESTATUS[0]}; set -e
+            if [ "$code" = "0" ]; then
+              gh release upload archive out/*.json --clobber   # metadata first,
+              gh release upload archive out/*.npz --clobber    # then the .npz that marks the run as done
+            elif [ "$code" = "3" ]; then
+              echo "::notice::$run not published yet (or expired); will retry next time"
+            else
+              echo "::error::$run failed (exit $code)"; failed=1
+            fi
+          done
+          {
+            echo "## Archive"
+            echo "Pending: $(tr '\n' ' ' < pending.txt)"
+            echo '```'
+            grep -E "MB/s|not \(fully\)|ERROR|Error" run.log || echo "nothing archived"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $failed
