@@ -40,30 +40,16 @@ jobs:
       - name: Install pinned pipeline dependencies
         run: pip install -r requirements-pipeline.txt
 
-      - name: Runner checks (dependencies, ecCodes, mirrors)
-        run: |
-          {
-            echo "## Runner checks"
-            echo '```'
-            python --version
-            echo "--- pip freeze (compare with requirements-pipeline.txt)"
-            pip freeze
-            python -c "import eccodes, numpy, xarray; print('eccodes', eccodes.__version__, 'lib', eccodes.codes_get_api_version(), '| numpy', numpy.__version__, '| xarray', xarray.__version__)"
-            echo "--- mirrors: one IFS index file (~2 MB) from the latest 00z run"
-            day=$(date -u +%Y%m%d)
-            p="$day/00z/ifs/0p25/enfo/${day}000000-24h-enfo-ef.index"
-            for base in https://storage.googleapis.com/ecmwf-open-data https://data.ecmwf.int/forecasts \
-                        https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com https://ecmwf-forecasts.s3.amazonaws.com; do
-              curl -s --connect-timeout 10 -m 60 -o idx -w "%{http_code} %{size_download}B %{time_total}s  " "$base/$p" || true
-              echo "$( [ -s idx ] && md5sum < idx | cut -c1-8 )  $base"; rm -f idx
-            done
-            echo '```'
-          } | tee -a "$GITHUB_STEP_SUMMARY"
-
       - name: Make sure the archive release exists
         run: |
           gh release view archive > /dev/null 2>&1 || gh release create archive --title "Forecast archive" \
             --notes "Accumulated tp (mm) for India, all 50 members, 6-hourly steps, per 00z/12z run. Built by .github/workflows/archive.yml. ECMWF open data, CC BY 4.0."
+
+      - name: Runner checks (packages, ecCodes, mirror timings) to the release
+        run: |
+          python -m ingest.runner_checks --out runner_checks.json
+          gh release upload archive runner_checks.json --clobber  # latest only; readable without login
+          { echo "## Runner checks"; echo '```json'; cat runner_checks.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Archive pending runs
         run: |

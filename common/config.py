@@ -35,8 +35,12 @@ TP_UNIT_TO_MM: dict[str, float] = {"m": 1000.0, "kg m**-2": 1.0}
 SOURCE_URLS: dict[str, str] = {
     "google": "https://storage.googleapis.com/ecmwf-open-data",
     "ecmwf": "https://data.ecmwf.int/forecasts",
+    # AWS mirrors (ECMWF open data page): only timed by ingest/runner_checks.py, not used for downloads (D34).
+    "aws-eu-central-1": "https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com",
+    "aws": "https://ecmwf-forecasts.s3.amazonaws.com",
 }
 SOURCE_ORDER: tuple[str, ...] = ("google", "ecmwf")
+MIRROR_CHECK_TIMEOUT_S = 60  # one attempt per mirror in the runner checks; a slow mirror should show as slow
 
 
 class ModelSpec(NamedTuple):
