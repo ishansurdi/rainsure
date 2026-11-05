@@ -1,0 +1,14 @@
+# Secrets: NASA_TOKEN lives here; never commit (DECISIONS.md)
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Local data: products are published by CI, never committed
+data/
+*.grib2
+*.idx
