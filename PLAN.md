@@ -19,7 +19,7 @@ Status: approved; P0 and P1 done, P2 in progress.
 - [x] Store: point tiles with finished sentences + map layers + metadata, previous run aligned by valid time; 1° tiles, 80 MB raw / 9.8 MB gzip per run, ≤ 28 kB gzip per answer (D52)
 - [x] API: FastAPI /meta, /point, /docs; reads published JSON only; tested import isolation (D42)
 - [x] Publish job: newest complete run → Pages after each archive pass (needs Pages source = GitHub Actions)
-- [ ] /district: needs a district boundary source + licence decision (not planned before 2026-11-05)
+- [x] /district dropped, README future work (D53)
 - [ ] Deploy API to Render; frontend (P4)
 
 ## Verified data facts (checked 2026-11-05)

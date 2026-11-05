@@ -123,8 +123,9 @@ jobs:
           {
             echo "## Published $run (previous $prev)"
             echo '```'
-            du -sh site/data/$run/points site/data/$run/layers site
+            for d in "site/data/$run/points" "site/data/$run/layers" site; do du -sh "$d"; done  # one call each: du counts a folder once
             echo "tiles: $(ls site/data/$run/points | wc -l)"
+            echo "largest tile: $(ls -S site/data/$run/points | head -1) $(ls -lS site/data/$run/points | sed -n 2p | awk '{print $5}') bytes"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
