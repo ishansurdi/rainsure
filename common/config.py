@@ -64,6 +64,25 @@ HTTP_WORKERS = 8  # parallel downloads; far below the 500-connection limit (ECMW
 HTTP_USER_AGENT = "rain-trust/0.1 (+https://github.com/ishansurdi/rainsure)"
 
 
+class GridSpec(NamedTuple):
+    """Regular lat/lon grid as stored in the GRIB message (scanning west->east, north->south)."""
+
+    ni: int
+    nj: int
+    lat_first: float
+    lon_first: float
+    step_deg: float
+
+
+# GRIB header of IFS-ens and AIFS-ens tp, verified by ecCodes decode of 20261104 00z:
+# 1440 x 721 points, first point lat 90 / lon 180, 0.25 deg, iScansNegatively=0, jScansPositively=0.
+SOURCE_GRID = GridSpec(ni=1440, nj=721, lat_first=90.0, lon_first=180.0, step_deg=0.25)
+
+# Archive: runs to look back for. ECMWF keeps "the most recent 12 forecast runs ... approximately 2-3 days"
+# (ecmwf.int open-data page); 4 date folders were seen live on 2026-11-05, so look back 4 days.
+ARCHIVE_LOOKBACK_H = 96
+
+
 class Box(NamedTuple):
     """Lat/lon box in degrees; longitudes in [-180, 180)."""
 

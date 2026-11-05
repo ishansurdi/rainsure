@@ -43,6 +43,19 @@ def validate_run_time(run_time_utc: datetime) -> None:
         raise ValueError(f"run hour {run_time_utc.hour:02d}z not in {config.RUN_HOURS_UTC}")
 
 
+def recent_runs(now_utc: datetime, hours_back: int) -> list[datetime]:
+    """Run times (00z/12z) that started in the last hours_back hours, newest first."""
+    _require_utc(now_utc)
+    t = now_utc.replace(minute=0, second=0, microsecond=0)
+    oldest = now_utc - timedelta(hours=hours_back)
+    runs = []
+    while t >= oldest:
+        if t.hour in config.RUN_HOURS_UTC:
+            runs.append(t)
+        t -= timedelta(hours=1)
+    return runs
+
+
 def blocks_for_run(run_time_utc: datetime, n_full_days: int = config.LEAD_DAYS) -> list[Block]:
     """Return 6-h blocks from run start to the end of the n-th full app day after it."""
     validate_run_time(run_time_utc)
