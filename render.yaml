@@ -1,0 +1,17 @@
+# Render Blueprint for the rain-trust API (DECISIONS.md D21, D22, D54). Keys per https://render.com/docs/blueprint-spec.
+# No secrets: the API only reads public JSON from GitHub Pages. Python version comes from .python-version (3.12).
+services:
+  - type: web
+    name: rain-trust-api
+    runtime: python
+    plan: free
+    region: singapore # closest Render region to India (render.com/docs/regions)
+    buildCommand: pip install -r requirements-api.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT # Render routes to $PORT on 0.0.0.0
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: DATA_BASE_URL
+        value: https://ishansurdi.github.io/rainsure/data
+      - key: PYTHONNOUSERSITE
+        value: "1"

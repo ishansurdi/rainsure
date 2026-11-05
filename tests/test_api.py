@@ -70,6 +70,10 @@ class TestEndpoints(unittest.TestCase):
         self.assertEqual((d.median_ifs_mm, d.median_aifs_mm, d.n_under_0_1_mm, d.n_previous), (3.6, 4.4, 5, None))
         self.assertEqual(d.text, "s4")
 
+    def test_healthz_needs_no_data(self) -> None:
+        os.environ["DATA_BASE_URL"] = "file:///nonexistent"
+        self.assertEqual(main.healthz(), {"ok": True})
+
     def test_outside_grid_is_404(self) -> None:
         with self.assertRaises(HTTPException) as e:
             main.point(lat=20.0, lon=80.0, at=None)

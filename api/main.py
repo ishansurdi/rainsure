@@ -146,6 +146,12 @@ def point(lat: Annotated[float, Query(ge=-90, le=90, description="Latitude, degr
                  current_block=k_now, summary_48h=summary, blocks=blocks, days=days)
 
 
+@app.get("/healthz", include_in_schema=False)
+def healthz() -> dict:
+    """Render health check: the process is up. Deliberately does not touch Pages, so a Pages outage is not a restart."""
+    return {"ok": True}
+
+
 @app.get("/", include_in_schema=False)
 def root() -> dict:
     """Pointer to the docs."""

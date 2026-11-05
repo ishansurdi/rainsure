@@ -20,7 +20,9 @@ Status: approved; P0 and P1 done, P2 in progress.
 - [x] API: FastAPI /meta, /point, /docs; reads published JSON only; tested import isolation (D42)
 - [x] Publish job: newest complete run → Pages after each archive pass (needs Pages source = GitHub Actions)
 - [x] /district dropped, README future work (D53)
-- [ ] Deploy API to Render; frontend (P4)
+- [x] First publish live on Pages (run 2026110500); tiles = API output for Chennai and Delhi (D55)
+- [x] render.yaml for the API (D54); author creates the Blueprint in the Render dashboard
+- [ ] Frontend (P4): needs the author's wireframes and palette
 
 ## Verified data facts (checked 2026-11-05)
 Sources: [OD] https://www.ecmwf.int/en/forecasts/datasets/open-data ·
