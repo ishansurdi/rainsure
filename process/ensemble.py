@@ -1,4 +1,4 @@
-"""Ensemble member counts ("N of 50 futures"), always from per-member totals (DECISIONS.md D2, D44)."""
+"""Ensemble member counts ("N of 50 forecasts", pooled "N of 100"), always from per-member totals (DECISIONS.md D2, D44)."""
 
 import numpy as np
 import xarray as xr

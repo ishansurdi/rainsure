@@ -109,6 +109,21 @@ AGREE_MAX_DIFF_PCT = 20.0  # models agree if |P_IFS - P_AIFS| < 20 points
 STABLE_MAX_DIFF_PCT = 20.0  # stable if |P_now - P_previous run| < 20 points
 CONFIDENCE_BY_POINTS: dict[int, str] = {0: "low", 1: "low", 2: "medium", 3: "high"}
 
+# --- IMD probability words (IMD Ahmedabad state bulletin 2026-11-04 legend p.3): Unlikely "less than 25%",
+# Likely "25% to 50%", Very likely "50% to 75 %", Most likely "more than 75%". IMD's ranges share 50 %; we give it
+# to the weaker word (DECISIONS.md D50). So: [0, 25) unlikely, [25, 50] likely, (50, 75] very likely, (75, 100] most.
+LIKELY_FROM_PCT = 25.0
+VERY_LIKELY_ABOVE_PCT = 50.0
+MOST_LIKELY_ABOVE_PCT = 75.0
+
+# --- IMD 24-h rain categories, lower bounds in mm (D16 sources), applied to the displayed value rounded to 0.1 mm.
+# Below 0.1 mm (shown as 0.0) we say "no rain"; IMD "very light" is trace-2.4 mm.
+RAIN_CATEGORIES_MM: tuple[tuple[float, str], ...] = (
+    (204.5, "extremely heavy rain"), (115.6, "very heavy rain"), (64.5, "heavy rain"),
+    (15.6, "moderate rain"), (2.5, "light rain"), (0.1, "very light rain"),
+)
+NEXT_HOURS_BLOCKS = 8  # 48-h summary on the answer card = 8 six-hour blocks
+
 
 class Box(NamedTuple):
     """Lat/lon box in degrees; longitudes in [-180, 180)."""
