@@ -136,6 +136,13 @@ SUMMARY_START_BLOCKS = 12
 # gzip per answer, 1-degree tiles up to 28 kB, for 14 % more total size (80.2 vs 70.4 MB raw).
 TILE_CELLS = 4
 
+# --- API (DECISIONS.md D22, D52). Published data base URL; override with env DATA_BASE_URL (e.g. file:// in tests).
+DATA_BASE_URL = "https://ishansurdi.github.io/rainsure/data"
+META_CACHE_S = 300  # re-read latest.json at most every 5 min
+TILE_CACHE_SIZE = 256  # tiles kept in memory (~7 kB gzip / ~70 kB raw each)
+# A run normally serves 8-20 h after its start (released ~8 h after start, replaced 12 h later).
+STALE_AFTER_H = 24  # older: at least one run was missed -> status "stale"
+
 
 class Box(NamedTuple):
     """Lat/lon box in degrees; longitudes in [-180, 180)."""
