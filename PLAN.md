@@ -22,7 +22,9 @@ Status: approved; P0 and P1 done, P2 in progress.
 - [x] /district dropped, README future work (D53)
 - [x] First publish live on Pages (run 2026110500); tiles = API output for Chennai and Delhi (D55)
 - [x] render.yaml for the API (D54); author creates the Blueprint in the Render dashboard
-- [ ] Frontend (P4): needs the author's wireframes and palette
+- [x] Wireframes in Figma (https://www.figma.com/design/olUt3VOYCvWi7k4UORTPBv), 12 resolutions approved
+- [x] Step 1 for the frontend: block percentiles/medians + gap layers (D57), 200-char summary with merged spread days (D56)
+- [ ] Frontend (P4), starts 2026-11-06 with the author: Vite + TS, MapLibre (pinned), IBM Plex Sans self-hosted, hand SVG charts, vitest; GeoNames places file; mapshaper (dev-only) for the Natural Earth India-POV boundary; "Day total" label on the amount layer; about page with API link, /docs and awake status; look for an ECMWF source on AIFS extremes (quote + link, else leave out); ochre text #855606
 
 ## Verified data facts (checked 2026-11-05)
 Sources: [OD] https://www.ecmwf.int/en/forecasts/datasets/open-data ·
