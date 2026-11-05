@@ -1,15 +1,60 @@
 # PLAN.md — rain-trust
 
-Session start: 2026-11-05. Hard deadline: 72 h from the first prompt (final commit by 2026-11-08).
+Clock started: 2026-11-05 ~04:00 UTC (09:30 IST), first prompt of the session.
+Hard deadline: final commit by **2026-11-08 04:00 UTC (09:30 IST)**.
 Deliverables: public repo, live app, video.
+Status: **DRAFT — awaiting author review. No code until approved.**
 
 ## Status
 - [x] CLAUDE.md committed
-- [ ] ECMWF Open Data facts verified against documentation
-- [ ] 72-hour phased plan agreed with the author
+- [x] ECMWF Open Data facts checked (section below)
+- [ ] Plan approved by author; open questions answered
 
-## Phases
-_To be filled after the documentation check and the author's review._
+## Verified data facts (checked 2026-11-05)
+Sources: [OD] https://www.ecmwf.int/en/forecasts/datasets/open-data ·
+[CF] https://confluence.ecmwf.int/display/DAC/ECMWF+open+data%3A+real-time+forecasts+from+IFS+and+AIFS ·
+[GH] https://github.com/ecmwf/ecmwf-opendata ·
+[LIVE] directory listings and `.index` files on https://data.ecmwf.int/forecasts/20261104/
 
-## Cut list (if behind)
-_To be filled with the phases._
+| | IFS ens (`ifs/0p25/enfo`) | AIFS ens (`aifs-ens/0p25/enfo`) | IFS HRES (`ifs/0p25/oper`) | AIFS single |
+|---|---|---|---|---|
+| Runs (UTC) | 00/06/12/18 [CF][LIVE] | 00/06/12/18 [OD][LIVE] | 00/06/12/18 | 00/06/12/18 |
+| Steps 00/12z | 0–144 by 3, 150–360 by 6 [OD][LIVE: 85 files] | 0–360 by 6 [OD][LIVE: 61 files] | same as IFS ens [LIVE] | 0–360 by 6 [LIVE] |
+| Steps 06/18z | 0–144 by 3 [OD][LIVE: 49 files] | 0–360 by 6 [OD] | 0–144 by 3 [LIVE]; CF/GH say 90 h — **outdated** | 0–360 by 6 |
+| Members with `tp` | 50 perturbed (`pf`, numbers 1–50) [LIVE index]; control not found in the `ef` file | 50 `pf` + 1 `cf` [LIVE index] | 1 | 1 |
+| Grid / format | 0.25° GRIB2 (0.1° also from 2026-10-20) [OD] | 0.25° only, GRIB2 [OD] | 0.25° / 0.1° | 0.25° |
+| `tp` field size | ~400 KB per global field [LIVE `_length`] | ~450 KB | ~390 KB | ~365 KB |
+| `ep` probabilities | 00/12z only [OD][GH][LIVE: none at 06z] | present at 00z [LIVE] | – | – |
+
+- `tp` units: metres [GH]. "Accumulated from forecast start" is **not stated** in OD/CF/GH. The index shows `step: "24"`, not a range. → Verify by decoding GRIB (first ingest test).
+- Retention: "most recent 12 forecast runs ... approximately 2–3 days" [OD]. LIVE showed 4 date folders on 5 Nov. → **Past forecasts must be archived by us** for any verification.
+- Release delay: "7 and 9 hours after" run start [GH]; AIFS released as soon as produced [OD].
+- Download: `.index` files give `_offset`/`_length` per field → HTTP byte-range fetch of `tp` only [LIVE].
+- Limits: 500–2000 simultaneous connections [OD][CF]; GH says 500. Retry on 429/5xx [GH].
+- Licence: CC-BY-4.0 + ECMWF Terms of Use [OD]. Attribution wording still to read on the ECMWF terms page.
+- **Consequence for IMD day (03 UTC boundaries):** AIFS (all steps) and IFS beyond 144 h are 6-hourly at 00/06/12/18 UTC valid times. A 03–03 UTC total **cannot be computed** from them. See open question Q1.
+
+## Phases (draft; hours from clock start)
+| Phase | Hours | Done when |
+|---|---|---|
+| P0 Skeleton | 0–4 | repo layout, pinned deps, `common/{config,time,units,grid}` + tests pass |
+| P1 Ingest | 4–12 | byte-range fetch of `tp` (India crop) for IFS-ens + AIFS-ens; validation (NaN, negatives, members, freshness); tp accumulation verified |
+| P1b Archive on | by 14 | scheduled job running every run, so stability and verification have history |
+| P2 Process | 12–26 | de-accumulate → daily totals → P(≥ thresholds), mean/percentiles, IFS–AIFS agreement, run-to-run change, confidence + template sentence; tests with hand-computed arrays |
+| P3 API | 26–32 | FastAPI: `/point`, `/layer`, `/meta`; every response carries model, run UTC, steps, processed time |
+| P4 Frontend | 32–52 | answer card, MapLibre globe→flat, chips, timeline, details, split slider; phone + desktop screenshots |
+| P5 Deploy | 52–60 | live URL, scheduled refresh, bad run → keep previous |
+| P6 Verification (stretch) | 60–66 | IMERG vs archived forecasts for days we have |
+| P7 Ship | 66–72 | README, video, final commit; 4 h buffer is inside this |
+
+## Cut list (in this order)
+1. IMERG verification (P6) → show "verification starts accumulating" note instead.
+2. Split slider → simple IFS / AIFS toggle.
+3. Globe at low zoom → flat map only.
+4. Lead time 10 → 5 days.
+5. Question chips → fixed layer list.
+
+Never cut: correct de-accumulation, IST labels, units, the probabilities, IFS–AIFS agreement, honest "missing data" states.
+
+## Open questions
+See conversation 2026-11-05; answers recorded in DECISIONS.md.
