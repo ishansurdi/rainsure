@@ -14,7 +14,8 @@ Status: approved; P0 and P1 done, P2 in progress.
 - [x] P1 runner checks: fetch 7–9 MB/s, ~5 min per run (D36); AWS eu-central-1 works, Google fastest (D34); Linux pulls eccodeslib + eckitlib, pinned for Linux; archive ~65 MB per run (D47)
 - [x] P1 archive: Actions job every 3 h saves each 00z/12z run (tp, 50 members, India) to release `archive`; 8 runs saved from 20261101 12z
 - [x] P1 validation before upload (D48); a bad run is not uploaded and is retried. "Keep serving the previous run" is part of the publish step (P2/P5)
-- [ ] P2 process: de-accumulate (D46 clip + log), 6-h and day totals, probabilities, agreement, stability, confidence, template sentence
+- [x] P2 process core: de-accumulate (D46 clip + log), app-day totals, member counts (D49 thresholds), pooled P, confidence checks; run end-to-end on real 20261104 00z/12z runs
+- [ ] P2 next: template sentences (wording to approve), block valid-time alignment for stability, packed layer writer (D44) + product metadata
 
 ## Verified data facts (checked 2026-11-05)
 Sources: [OD] https://www.ecmwf.int/en/forecasts/datasets/open-data ·
