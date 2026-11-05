@@ -69,7 +69,8 @@ class TestProductsAndTile(unittest.TestCase):
         tile = self.tiles[(0, 0)]
         self.assertEqual(sorted(tile["cells"]), ["0_0", "0_1", "1_0", "1_1"])
         cell, s = tile["cells"]["0_0"], tile["strings"]
-        self.assertEqual(cell["b"][1], [30, 0, -1, "fffffffc" + "00" * 9])
+        # pooled 100: 70 zeros + 30 threes -> p10 0.0, p90 3.0 (index 89.1); IFS median 3.0, AIFS median 0.0
+        self.assertEqual(cell["b"][1], [30, 0, -1, "fffffffc" + "00" * 9, 0.0, 3.0, 3.0, 0.0])
         self.assertEqual(s[cell["bt"][1][0]],
                          "Models disagree on rain Thu afternoon · 11:30–17:30 IST: physics 30 of 50, AI 0 of 50.")
         self.assertEqual(s[cell["bt"][1][1]], "Forecast unsettled: not clear-cut (30 of 100), physics and AI "
@@ -93,6 +94,9 @@ class TestProductsAndTile(unittest.TestCase):
         self.assertEqual(int(a["block_settled"][1, 0, 0]), 0)  # not decided, models disagree, not stable
         self.assertEqual(int(a["block_settled"][1, 1, 1]), 0b011)  # dry cell: decided + agree, no previous run
         self.assertEqual(a["day_median"].dtype, np.uint16)
+        self.assertEqual(int(a["block_gap"][1, 0, 0]), 20)  # AIFS 0 - IFS 30 + 50
+        self.assertEqual(int(a["block_gap"][1, 1, 1]), 50)  # dry cell: no gap
+        self.assertEqual(int(a["day_gap"][0, 0, 0]), 20)  # same members wet over Thu
 
 
 if __name__ == "__main__":

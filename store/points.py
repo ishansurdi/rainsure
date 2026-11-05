@@ -2,8 +2,9 @@
 
 Tile JSON: {"run", "tile": [ti, tj], "strings": [...], "cells": {"j_i": cell}} where j, i index the run grid
 (north->south, west->east). Sentences are stored once per tile in "strings" and referenced by index:
-  cell["b"][k]  = [n_ifs, n_aifs, n_prev or -1, dots]  per 6-h block k; dots = 26 hex chars, bit n (MSB first) =
-                  forecast n wet (>= 2.5 mm): 0-49 IFS members 1-50, 50-99 AIFS members 1-50
+  cell["b"][k]  = [n_ifs, n_aifs, n_prev or -1, dots, p10, p90, median_ifs, median_aifs]  per 6-h block k;
+                  dots = 26 hex chars, bit n (MSB first) = forecast n wet (>= 2.5 mm): 0-49 IFS members 1-50,
+                  50-99 AIFS members 1-50; p10/p90 of the 100 forecasts and model medians in mm (0.1 mm, D57)
   cell["bt"][k] = [answer, settled]                    sentence indices for block k
   cell["d"][k]  = [n_ifs, n_aifs] per DAY_THRESHOLDS_MM, then n_prev or -1, p10, p25, p50, p75, p90 (mm),
                   median_ifs, median_aifs (mm), n_zero                 per full app day k
@@ -61,7 +62,8 @@ def build_tiles(run_id: str, blocks: list[Block], bp: xr.Dataset, dp: xr.Dataset
     if len(summary_counts) + config.NEXT_HOURS_BLOCKS - 1 > nb:
         raise ValueError("summary windows run past the last block")
     b = {k: bp[k].transpose("step_h", "latitude", "longitude").values for k in
-         ("n_ifs", "n_aifs", "n_pooled", "n_prev", "decided", "agree", "stable")}
+         ("n_ifs", "n_aifs", "n_pooled", "n_prev", "decided", "agree", "stable", "p10_mm", "p90_mm",
+          "median_ifs_mm", "median_aifs_mm")}
     dots = dots_hex(bp["wet"].transpose("latitude", "longitude", "step_h", "member").values)  # (J, I, S)
     dvars = [f"n_{m}_{t:g}" for t in config.DAY_THRESHOLDS_MM for m in ("ifs", "aifs")]
     d = {k: dp[k].transpose("app_day", "latitude", "longitude").values for k in
@@ -94,7 +96,8 @@ def _cell(j, i, b, dots, d, dvars, pct, blocks, b_labels, d_labels, summary_coun
             _prev(b["n_prev"][k, j, i])
         dec, agr, stb = bool(b["decided"][k, j, i]), bool(b["agree"][k, j, i]), bool(b["stable"][k, j, i])
         answer = block_sentence(b_labels[k], npool) if agr else disagree_sentence(b_labels[k], ni, na)
-        cb.append([ni, na, -1 if prev is None else prev, str(dots[j, i, k])])
+        cb.append([ni, na, -1 if prev is None else prev, str(dots[j, i, k])]
+                  + [_mm(b[v][k, j, i]) for v in ("p10_mm", "p90_mm", "median_ifs_mm", "median_aifs_mm")])
         cbt.append([table.add(answer), table.add(confidence_sentence(npool, dec, agr, stb, prev))])
     cd, cdt = [], []
     for k in range(nd):

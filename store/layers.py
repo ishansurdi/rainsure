@@ -1,7 +1,8 @@
 """Packed map layers (DECISIONS.md D44, D52): one gzip file per layer, all time slots, row-major (slot, lat, lon).
 
 uint8 layers: member counts (255 = missing); 'settled' = bit 0 decided, bit 1 models agree, bit 2 stable;
-'change' = pooled count now - previous + 100 (0..200; 255 = no previous). uint16 'median': 0.1 mm (65535 = missing).
+'change' = pooled count now - previous + 100 (0..200; 255 = no previous); 'gap' = AIFS count - IFS count + 50
+(0..100: below 50 physics wetter, above 50 AI wetter; D57). uint16 'median': 0.1 mm (65535 = missing).
 """
 
 import gzip
@@ -34,6 +35,11 @@ def change_u8(n_now: np.ndarray, n_prev: np.ndarray) -> np.ndarray:
     return out
 
 
+def gap_u8(n_ifs: np.ndarray, n_aifs: np.ndarray) -> np.ndarray:
+    """AIFS count minus IFS count (each of 50) + 50 as uint8 (0..100)."""
+    return (n_aifs.astype(np.int16) - n_ifs.astype(np.int16) + config.EXPECTED_MEMBERS).astype(np.uint8)
+
+
 def tenth_mm_u16(mm: np.ndarray) -> np.ndarray:
     """mm -> uint16 tenths of mm (max error 0.05 mm); NaN or too large -> missing."""
     out = np.full(mm.shape, U16_MISSING, dtype=np.uint16)
@@ -47,6 +53,7 @@ def layer_arrays(bp: xr.Dataset, dp: xr.Dataset) -> dict[str, np.ndarray]:
     out = {f"block_{k}": _grid(bp[f"n_{k}"], "step_h").astype(np.uint8) for k in ("ifs", "aifs", "pooled")}
     out["block_settled"] = settled_bits(bp, "step_h")
     out["block_change"] = change_u8(_grid(bp["n_pooled"], "step_h"), _grid(bp["n_prev"], "step_h"))
+    out["block_gap"] = gap_u8(_grid(bp["n_ifs"], "step_h"), _grid(bp["n_aifs"], "step_h"))
     for t in config.DAY_THRESHOLDS_MM:
         ni, na = _grid(dp[f"n_ifs_{t:g}"], "app_day"), _grid(dp[f"n_aifs_{t:g}"], "app_day")
         out[f"day_ifs_{t:g}"], out[f"day_aifs_{t:g}"] = ni.astype(np.uint8), na.astype(np.uint8)
@@ -54,6 +61,8 @@ def layer_arrays(bp: xr.Dataset, dp: xr.Dataset) -> dict[str, np.ndarray]:
     out["day_median"] = tenth_mm_u16(_grid(dp["pct_mm"].sel(pct=50), "app_day"))
     out["day_settled"] = settled_bits(dp, "app_day")
     out["day_change"] = change_u8(_grid(dp["n_pooled"], "app_day"), _grid(dp["n_prev"], "app_day"))
+    ev = f"{config.EVENT_MM:g}"
+    out["day_gap"] = gap_u8(_grid(dp[f"n_ifs_{ev}"], "app_day"), _grid(dp[f"n_aifs_{ev}"], "app_day"))
     return out
 
 

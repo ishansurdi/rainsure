@@ -50,6 +50,10 @@ class Block(BaseModel):
     answer: str
     settled: str
     dots: str = Field(description="26 hex chars; bit n (MSB first) = forecast n wet: 0-49 IFS, 50-99 AIFS")
+    p10_mm: float = Field(description="10th percentile of the 100 forecasts, mm in this block")
+    p90_mm: float = Field(description="90th percentile of the 100 forecasts, mm in this block")
+    median_ifs_mm: float
+    median_aifs_mm: float
 
 
 class Day(BaseModel):
@@ -126,10 +130,12 @@ def point(lat: Annotated[float, Query(ge=-90, le=90, description="Latitude, degr
     if k_now is not None and k_now < m["summary_start_blocks"]:
         summary = s[cell["s"][k_now]]
     blocks = []
-    for k, (b, (ni, na, prev, dots), (ta, ts)) in enumerate(zip(m["blocks"], cell["b"], cell["bt"])):
+    for b, row, (ta, ts) in zip(m["blocks"], cell["b"], cell["bt"]):
+        ni, na, prev, dots, p10, p90, mi, ma = row
         blocks.append(Block(label=b["label"], start_utc=b["start_utc"], end_utc=b["end_utc"],
                             past=datetime.fromisoformat(b["end_utc"]) <= now, n_ifs=ni, n_aifs=na, n_pooled=ni + na,
-                            n_previous=None if prev < 0 else prev, answer=s[ta], settled=s[ts], dots=dots))
+                            n_previous=None if prev < 0 else prev, answer=s[ta], settled=s[ts], dots=dots,
+                            p10_mm=p10, p90_mm=p90, median_ifs_mm=mi, median_aifs_mm=ma))
     days = []
     thresholds = m["day_thresholds_mm"]
     for dmeta, row, (tt, ts) in zip(m["days"], cell["d"], cell["dt"]):

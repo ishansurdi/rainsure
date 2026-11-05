@@ -16,6 +16,7 @@ from process.ensemble import members_at_least, percent, pooled
 
 IFS, AIFS = "ifs-ens", "aifs-ens"
 PERCENTILES = (10, 25, 50, 75, 90)
+BLOCK_PERCENTILES = (10, 90)  # meteogram band per 6-h block (D57)
 
 
 @dataclass(frozen=True)
@@ -73,10 +74,20 @@ def block_products(cur: RunRain, prev: RunRain | None) -> xr.Dataset:
         n_prev = align_steps(p, prev.run_time_utc, cur.run_time_utc, steps)
     checks = confidence_checks(percent(n_ifs), percent(n_aifs), percent(n_pool),
                                100.0 * n_prev / n_pool.attrs["members"])
-    wet = pooled_rain(cur) >= config.EVENT_MM
+    rain_100 = pooled_rain(cur)
+    wet = rain_100 >= config.EVENT_MM
+    axis = rain_100.get_axis_num("member")
+    p10, p90 = np.percentile(rain_100.values, BLOCK_PERCENTILES, axis=axis).astype(np.float32)
+    dims = tuple(d for d in rain_100.dims if d != "member")
+    coords = {d: rain_100[d] for d in dims}
     return xr.Dataset({"n_ifs": n_ifs, "n_aifs": n_aifs, "n_pooled": n_pool, "n_prev": n_prev,
                        "decided": checks["decided"], "agree": checks["agree"], "stable": checks["stable"],
-                       "wet": wet})
+                       "wet": wet,
+                       # meteogram (D57): pooled p10/p90 band and each model's median, mm per 6-h block
+                       "p10_mm": xr.DataArray(p10, dims=dims, coords=coords),
+                       "p90_mm": xr.DataArray(p90, dims=dims, coords=coords),
+                       "median_ifs_mm": cur.rain[IFS].median("member").astype(np.float32),
+                       "median_aifs_mm": cur.rain[AIFS].median("member").astype(np.float32)})
 
 
 def day_products(cur: RunRain, prev: RunRain | None) -> xr.Dataset:
