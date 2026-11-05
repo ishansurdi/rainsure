@@ -59,7 +59,7 @@ If any answer is "not sure", investigate first. Do not guess.
 - No secrets in code or commits. Use environment variables.
 
 ## 6. Data correctness rules (non-negotiable)
-- `tp` is accumulated from forecast start, in metres. Always de-accumulate, then convert to mm. Clip only tiny negatives and log the count.
+- `tp` is accumulated from forecast start; units differ by model (IFS `m`, AIFS `kg m**-2` = mm). Always read the GRIB `units` key, de-accumulate, then convert to mm; unknown unit → error. Clip only tiny negatives and log the count.
 - Every displayed time is IST and labelled. Every number has a unit.
 - Every product records: model, run time (UTC), steps, processing time.
 - Check facts (step intervals, available members, thresholds, retention) against ECMWF/IMD documentation. Do not rely on memory. Write the source in a comment.

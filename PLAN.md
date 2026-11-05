@@ -61,5 +61,13 @@ Sources: [OD] https://www.ecmwf.int/en/forecasts/datasets/open-data ·
 
 Never cut: correct de-accumulation, IST labels, units, the probabilities, IFS–AIFS agreement, honest "missing data" states.
 
+## Credits (app footer + README) — D37
+- **ECMWF** (required by https://apps.ecmwf.int/datasets/licences/general/, "service" wording): "This service is based on data and products of the European Centre for Medium-Range Weather Forecasts (ECMWF)." · Source: www.ecmwf.int · "This ECMWF data is published under a Creative Commons Attribution 4.0 International (CC BY 4.0). https://creativecommons.org/licenses/by/4.0/" · Disclaimer: "ECMWF does not accept any liability whatsoever for any error or omission in the data, their availability, or for any loss or damage arising from their use." · Modifications: precipitation de-accumulated, converted to mm, aggregated to 6-h/24-h totals, cropped to India, turned into ensemble statistics. Displayed prominently, not hidden.
+- **GeoNames** (CC BY 4.0): place names from GeoNames, https://www.geonames.org/
+- **IMD**: rainfall categories and probability terms from IMD terminology (Ahmedabad bulletin 2026-11-04, RSMC New Delhi terminology). Not an IMD product.
+- **Basemap**: "OpenFreeMap © OpenMapTiles Data from OpenStreetMap" with links (MapLibre adds it automatically).
+- **Natural Earth**: "Made with Natural Earth" (optional, public domain; we credit anyway).
+- **NASA IMERG**: added when verification ships.
+
 ## Open questions
 See conversation 2026-11-05; answers recorded in DECISIONS.md.
