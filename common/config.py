@@ -128,6 +128,14 @@ RAIN_CATEGORIES_MM: tuple[tuple[float, str], ...] = (
 )
 NEXT_HOURS_BLOCKS = 8  # 48-h summary on the answer card = 8 six-hour blocks
 
+# --- Published products (DECISIONS.md D52).
+# 48-h summaries are pre-written for the run's first 12 start blocks (72 h): a run is public ~8 h after its start
+# and replaced 12 h later, so 72 h still covers two missed runs. Later, the frontend says the forecast is out of date.
+SUMMARY_START_BLOCKS = 12
+# Point tiles cover 4 x 4 cells = 1 x 1 degree. Measured on 20261104 12z (D52): 2-degree tiles were up to 100 kB
+# gzip per answer, 1-degree tiles up to 28 kB, for 14 % more total size (80.2 vs 70.4 MB raw).
+TILE_CELLS = 4
+
 
 class Box(NamedTuple):
     """Lat/lon box in degrees; longitudes in [-180, 180)."""
