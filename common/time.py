@@ -104,6 +104,14 @@ def block_label(block: Block) -> str:
     return span_label(block, block)
 
 
+def short_span(first: Block, last: Block) -> str:
+    """Compact IST span of consecutive blocks: 'Thu 11:30–17:30 IST' or 'Thu 23:30 – Fri 05:30 IST'."""
+    s, e = to_ist(first.start_utc), to_ist(last.end_utc)
+    if s.date() == e.date():
+        return f"{_WEEKDAYS[s.weekday()]} {s:%H:%M}–{e:%H:%M} IST"
+    return f"{_WEEKDAYS[s.weekday()]} {s:%H:%M} – {_WEEKDAYS[e.weekday()]} {e:%H:%M} IST"
+
+
 def day_label(app_day: date) -> str:
     """App day in IST, e.g. 'Thu · 05:30 Thu – 05:30 Fri IST' (D1)."""
     start = datetime(app_day.year, app_day.month, app_day.day, config.DAY_START_HOUR_UTC, tzinfo=timezone.utc)

@@ -3,8 +3,8 @@
 import unittest
 from datetime import date, datetime, timezone
 
-from common.time import (block_label, block_name, blocks_for_run, day_label, span_label, time_label, to_ist,
-                         validate_run_time)
+from common.time import (block_label, block_name, blocks_for_run, day_label, short_span, span_label, time_label,
+                         to_ist, validate_run_time)
 
 UTC = timezone.utc
 
@@ -72,6 +72,12 @@ class TestLabels(unittest.TestCase):
         self.assertEqual(span_label(b[3], b[5]), "Thu night – Fri afternoon · 23:30 Thu – 17:30 Fri IST")
         self.assertEqual(block_name(b[3]), "Thu night")
         self.assertEqual(time_label(b[2].start_utc), "Thu 17:30 IST")
+
+    def test_short_span(self) -> None:
+        b = blocks_for_run(datetime(2026, 11, 5, 0, tzinfo=UTC), n_full_days=2)
+        self.assertEqual(short_span(b[1], b[2]), "Thu 11:30–23:30 IST")
+        self.assertEqual(short_span(b[3], b[3]), "Thu 23:30 – Fri 05:30 IST")
+        self.assertEqual(short_span(b[0], b[7]), "Thu 05:30 – Sat 05:30 IST")
 
     def test_day_label(self) -> None:
         self.assertEqual(day_label(date(2026, 11, 5)), "Thu · 05:30 Thu – 05:30 Fri IST")

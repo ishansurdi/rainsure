@@ -127,6 +127,9 @@ RAIN_CATEGORIES_MM: tuple[tuple[float, str], ...] = (
     (15.6, "moderate rain"), (2.5, "light rain"), (0.1, "very light rain"),
 )
 NEXT_HOURS_BLOCKS = 8  # 48-h summary on the answer card = 8 six-hour blocks
+# Hard limit for the answer-card summary (author, D56): about 5 lines at 17 px on a 390 px phone. Parts are kept in
+# time order (nearest first); later parts are dropped and replaced by a pointer to the timeline.
+SUMMARY_MAX_CHARS = 200
 
 # --- Published products (DECISIONS.md D52).
 # 48-h summaries are pre-written for the run's first 12 start blocks (72 h): a run is public ~8 h after its start

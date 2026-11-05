@@ -75,9 +75,8 @@ class TestProductsAndTile(unittest.TestCase):
                          "Models disagree on rain Thu afternoon · 11:30–17:30 IST: physics 30 of 50, AI 0 of 50.")
         self.assertEqual(s[cell["bt"][1][1]], "Forecast unsettled: not clear-cut (30 of 100), physics and AI "
                                               "models disagree, no earlier forecast to compare.")
-        self.assertEqual(s[cell["s"][0]], "Rain unlikely until Thu afternoon. Rain likely Thu afternoon · "
-                                          "11:30–17:30 IST. Models disagree on Thu afternoon · 11:30–17:30 IST: "
-                                          "physics 30 of 50, AI 0 of 50.")
+        self.assertEqual(s[cell["s"][0]], "Rain unlikely until Thu afternoon. Rain likely Thu 11:30–17:30 IST. "
+                                          "Models disagree on Thu 11:30–17:30 IST: physics 30 of 50, AI 0 of 50.")
         # day: IFS 30 of 50 at 3 mm -> median of 50 = 3.0; pooled: 70 zeros + 30 threes -> p50 0, p75 3.0
         self.assertEqual(cell["d"][0][:2], [30, 0])
         self.assertEqual(cell["d"][0][6:], [-1, 0.0, 0.0, 0.0, 3.0, 3.0, 3.0, 0.0, 70])

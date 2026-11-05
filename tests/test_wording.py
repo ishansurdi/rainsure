@@ -1,8 +1,11 @@
 """Tests for process.wording: exact sentences for hand-picked counts (2026-11-05 is a Thursday)."""
 
+import random
 import unittest
 from datetime import date, datetime, timezone
+from unittest.mock import patch
 
+from common import config
 from common.time import blocks_for_run
 from process.wording import (BlockCounts, block_sentence, confidence_sentence, day_sentence, disagree_sentence,
                              prob_word, rain_category, summary_48h)
@@ -83,24 +86,22 @@ class TestSummary48h(unittest.TestCase):
     def test_one_spell(self) -> None:
         # 24 of 100 is unlikely; Thu evening 26+24 = 50 likely (gap 4 points: no disagreement note)
         w = _window([(0, 0), (12, 12), (26, 24), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)])
-        self.assertEqual(summary_48h(w, NO_SPREAD),
-                         "Rain unlikely until Thu evening. Rain likely Thu evening · 17:30–23:30 IST.")
+        self.assertEqual(summary_48h(w, NO_SPREAD), "Rain unlikely until Thu evening. Rain likely Thu 17:30–23:30 IST.")
 
     def test_two_spells_up_to(self) -> None:
         # spell 1: Thu afternoon 47+46 = 93 most likely, evening 14+23 = 37 likely -> "up to most likely"
-        # spell 2: Fri afternoon 20+19 = 39, one block -> "likely"
+        # spell 2: Fri afternoon 20+19 = 39, one block -> "likely"; largest model gap 18 points -> no note
         w = _window([(1, 1), (47, 46), (14, 23), (2, 7), (1, 6), (20, 19), (3, 6), (1, 5)])
         self.assertEqual(summary_48h(w, NO_SPREAD),
-                         "Rain unlikely until Thu afternoon. Rain up to most likely Thu afternoon – evening · "
-                         "11:30–23:30 IST, and likely again Fri afternoon · 11:30–17:30 IST.")
+                         "Rain unlikely until Thu afternoon. Rain up to most likely Thu 11:30–23:30 IST. "
+                         "Rain likely again Fri 11:30–17:30 IST.")
 
     def test_on_and_off_with_disagreement(self) -> None:
         # wet: Thu night 28, Fri afternoon 29 (1 vs 28: 54-point gap), Fri night 30 -> all "likely", no "up to"
         w = _window([(3, 3), (0, 11), (2, 0), (18, 10), (10, 12), (1, 28), (4, 8), (14, 16)])
         self.assertEqual(summary_48h(w, NO_SPREAD),
                          "Rain unlikely until Thu night. Then on and off until Sat 05:30 IST: rain likely in "
-                         "3 of 8 blocks. Models disagree on Fri afternoon · 11:30–17:30 IST: physics 1 of 50, "
-                         "AI 28 of 50.")
+                         "3 of 8 blocks. Models disagree on Fri 11:30–17:30 IST: physics 1 of 50, AI 28 of 50.")
 
     def test_wet_from_the_start(self) -> None:
         w = _window([(40, 40), (0, 0), (20, 20), (0, 0), (20, 20), (0, 0), (0, 0), (0, 0)])
@@ -111,15 +112,47 @@ class TestSummary48h(unittest.TestCase):
         # Hyderabad-like: every block 24 of 100 or less, but 33 of 100 reach 2.5 mm over Thu
         w = _window([(4, 0), (8, 0), (4, 0), (0, 0), (0, 0), (4, 0), (3, 0), (0, 0)])
         self.assertEqual(summary_48h(w, {THU: 33, FRI: 7}),
-                         "Rain likely spread over Thu morning – night · 05:30 Thu – 05:30 Fri IST: 33 of 100 "
-                         "forecasts give ≥ 2.5 mm in total, but no single 6-hour block is likely wet.")
+                         "Rain likely spread over Thu 05:30 – Fri 05:30 IST: 33 of 100 forecasts give ≥ 2.5 mm, "
+                         "no single 6-hour block likely wet.")
 
     def test_spread_day_before_wet_spell_in_time_order(self) -> None:
         w = _window([(4, 0), (8, 0), (4, 0), (0, 0), (0, 0), (20, 20), (3, 0), (0, 0)])
         self.assertEqual(summary_48h(w, {THU: 30, FRI: 45}),
-                         "Rain likely spread over Thu morning – night · 05:30 Thu – 05:30 Fri IST: 30 of 100 "
-                         "forecasts give ≥ 2.5 mm in total, but no single 6-hour block is likely wet. "
-                         "Rain likely Fri afternoon · 11:30–17:30 IST.")
+                         "Rain likely spread over Thu 05:30 – Fri 05:30 IST: 30 of 100 forecasts give ≥ 2.5 mm, "
+                         "no single 6-hour block likely wet. Rain likely Fri 11:30–17:30 IST.")
+
+    def test_consecutive_spread_days_merge(self) -> None:
+        # Chennai-like: no block >= 25 of 100, but both days are wet in total -> one sentence, count range
+        w = _window([(6, 6)] * 8)
+        self.assertEqual(summary_48h(w, {THU: 30, FRI: 79}),
+                         "Rain up to most likely spread over Thu 05:30 – Sat 05:30 IST: 30–79 of 100 forecasts per "
+                         "day give ≥ 2.5 mm, no single 6-hour block likely wet.")
+
+    def test_limit_keeps_nearest_and_points_to_timeline(self) -> None:
+        # from Thu afternoon: wet Thu afternoon, spread Fri (60 of 100 over the day), wet Sat morning.
+        blocks = blocks_for_run(datetime(2026, 11, 5, 0, tzinfo=timezone.utc), n_full_days=3)[1:9]
+        counts = [(20, 20), (0, 0), (0, 0), (10, 10), (10, 10), (10, 10), (10, 10), (20, 20)]
+        w = [BlockCounts(b, i, a) for b, (i, a) in zip(blocks, counts)]
+        days = {THU: 40, FRI: 60, date(2026, 11, 7): 40}
+        full = summary_48h(w, days)  # everything fits in 200
+        self.assertTrue(full.startswith("Rain likely Thu 11:30–17:30 IST. Rain very likely spread over Fri"))
+        self.assertTrue(full.endswith("Rain likely again Sat 05:30–11:30 IST."))
+        with patch.object(config, "SUMMARY_MAX_CHARS", 80):
+            self.assertEqual(summary_48h(w, days), "Rain likely Thu 11:30–17:30 IST. More rain later: see the timeline.")
+
+    def test_never_over_limit_random(self) -> None:
+        rng = random.Random(20261105)
+        blocks = blocks_for_run(datetime(2026, 11, 4, 12, tzinfo=timezone.utc))  # 12z: partial first day
+        for _ in range(5000):
+            s = rng.randrange(0, config.SUMMARY_START_BLOCKS)
+            sel = blocks[s:s + 8]
+            w = [BlockCounts(b, rng.choice([0, 0, 3, 12, 13, 25, 26, 40, 50]), rng.choice([0, 0, 2, 12, 13, 25, 38, 50]))
+                 for b in sel]
+            days = {b.app_day: rng.choice([0, 10, 24, 25, 60, 100]) for b in sel}
+            text = summary_48h(w, days)
+            self.assertLessEqual(len(text), config.SUMMARY_MAX_CHARS, text)
+            if text.startswith("Rain unlikely for the next 48 hours"):
+                self.assertTrue(all(b.n_pooled < 25 for b in w))
 
     def test_wrong_length(self) -> None:
         with self.assertRaises(ValueError):
