@@ -46,7 +46,7 @@ If any answer is "not sure", investigate first. Do not guess.
   - `common/config.py` — all constants: thresholds, regions, models, URLs
 - **No duplicated logic.** If the same 3+ lines appear twice, extract a helper.
 - **No magic numbers in code.** Thresholds, bounding boxes, IMD categories live in `config.py` with a comment citing the source.
-- Modules depend downwards only: `api` → `store` → `process` → `common`. Never the reverse. `frontend` talks only to the API.
+- Modules depend downwards only: `api` → `store` → `process` → `common`. Never the reverse. `frontend` reads published static products and the API; it never computes forecast values.
 - Generalise only when there is a second real use. Do not build abstractions for imagined futures.
 
 ## 5. Code standards
@@ -76,10 +76,13 @@ If any answer is "not sure", investigate first. Do not guess.
 ## 8. Commits
 - Commit from inside the session after each small working step. Never batch a day's work into one commit.
 - One logical change per commit.
-- **Commit message: at most 6 lines.**
-  - Line 1: imperative summary, ≤ 60 characters (`Add IMD-day aggregation for daily totals`).
-  - Blank line.
-  - Up to 4 short lines: what changed and why, and how it was verified.
+- **Conventional commits:** `type(scope): short summary`
+  - Types: `feat`, `fix`, `test`, `docs`, `refactor`, `chore`, `ci`.
+  - Scope = module name when it fits (`time`, `grid`, `ingest`, `api`, `ui`); omit when it doesn't.
+  - Summary: lowercase, imperative, max ~50 characters, no full stop.
+  - Body optional: blank line, then max 3 short lines on what and why. No "recorded", "per review", "as discussed".
+  - Examples: `feat(time): add 6h IST blocks and day labels` · `fix(ingest): read tp units per model` · `docs: decide hosting, basemap and data mirror`
+- No co-author lines or session links in commits.
 - No force-push, no history rewriting, no amending pushed commits. Git history must line up with the session log.
 
 ## 9. Workflow for each task
