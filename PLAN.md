@@ -8,7 +8,9 @@ Status: **DRAFT — awaiting author review. No code until approved.**
 ## Status
 - [x] CLAUDE.md committed
 - [x] ECMWF Open Data facts checked (section below)
-- [ ] Plan approved by author; open questions answered
+- [x] Plan approved by author; open questions answered (2026-11-05, two reviews)
+- [x] P0: `common/config.py`, `common/time.py` + 12 tests (stdlib only)
+- [ ] P0: `common/units.py`, `common/grid.py` + tests (needs numpy/xarray approval)
 
 ## Verified data facts (checked 2026-11-05)
 Sources: [OD] https://www.ecmwf.int/en/forecasts/datasets/open-data ·
