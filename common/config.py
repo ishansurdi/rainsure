@@ -102,6 +102,13 @@ DAY_THRESHOLDS_MM: tuple[float, ...] = (2.5, 15.6, 64.5)
 # IMD "heavy" (DECISIONS.md D49).
 BLOCK_THRESHOLDS_MM: tuple[float, ...] = (EVENT_MM,)
 
+# --- Confidence checks on P(rain >= EVENT_MM), in percent / percentage points (DECISIONS.md D14, D15; strict bounds).
+DECIDED_BELOW_PCT = 20.0  # decided if P < 20 % ...
+DECIDED_ABOVE_PCT = 80.0  # ... or P > 80 %
+AGREE_MAX_DIFF_PCT = 20.0  # models agree if |P_IFS - P_AIFS| < 20 points
+STABLE_MAX_DIFF_PCT = 20.0  # stable if |P_now - P_previous run| < 20 points
+CONFIDENCE_BY_POINTS: dict[int, str] = {0: "low", 1: "low", 2: "medium", 3: "high"}
+
 
 class Box(NamedTuple):
     """Lat/lon box in degrees; longitudes in [-180, 180)."""
