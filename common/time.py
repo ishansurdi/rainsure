@@ -72,10 +72,39 @@ def blocks_for_run(run_time_utc: datetime, n_full_days: int = config.LEAD_DAYS) 
     return blocks
 
 
+def block_name(block: Block) -> str:
+    """Short name without times, e.g. 'Thu night' (weekday of the block's app day)."""
+    return f"{_WEEKDAYS[block.app_day.weekday()]} {block.name}"
+
+
+def time_label(t_utc: datetime) -> str:
+    """A moment in IST, e.g. 'Thu 11:30 IST'."""
+    t = to_ist(t_utc)
+    return f"{_WEEKDAYS[t.weekday()]} {t:%H:%M} IST"
+
+
+def _ist_range(start_utc: datetime, end_utc: datetime) -> str:
+    """'11:30–17:30 IST' within one IST date, else '23:30 Thu – 05:30 Fri IST'."""
+    s, e = to_ist(start_utc), to_ist(end_utc)
+    if s.date() == e.date():
+        return f"{s:%H:%M}–{e:%H:%M} IST"
+    return f"{s:%H:%M} {_WEEKDAYS[s.weekday()]} – {e:%H:%M} {_WEEKDAYS[e.weekday()]} IST"
+
+
+def span_label(first: Block, last: Block) -> str:
+    """Label for consecutive blocks, e.g. 'Thu afternoon – evening · 11:30–23:30 IST' (one block: block_label)."""
+    names = block_name(first)
+    if last != first:
+        names += f" – {last.name}" if last.app_day == first.app_day else f" – {block_name(last)}"
+    return f"{names} · {_ist_range(first.start_utc, last.end_utc)}"
+
+
 def block_label(block: Block) -> str:
     """Human label in IST, e.g. 'Thu night · 23:30 Thu – 05:30 Fri IST' (dates shown when it crosses midnight)."""
-    s, e = to_ist(block.start_utc), to_ist(block.end_utc)
-    day = _WEEKDAYS[block.app_day.weekday()]
-    if s.date() == e.date():
-        return f"{day} {block.name} · {s:%H:%M}–{e:%H:%M} IST"
-    return f"{day} {block.name} · {s:%H:%M} {_WEEKDAYS[s.weekday()]} – {e:%H:%M} {_WEEKDAYS[e.weekday()]} IST"
+    return span_label(block, block)
+
+
+def day_label(app_day: date) -> str:
+    """App day in IST, e.g. 'Thu · 05:30 Thu – 05:30 Fri IST' (D1)."""
+    start = datetime(app_day.year, app_day.month, app_day.day, config.DAY_START_HOUR_UTC, tzinfo=timezone.utc)
+    return f"{_WEEKDAYS[app_day.weekday()]} · {_ist_range(start, start + timedelta(hours=24))}"

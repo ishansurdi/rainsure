@@ -3,7 +3,8 @@
 import unittest
 from datetime import date, datetime, timezone
 
-from common.time import block_label, blocks_for_run, to_ist, validate_run_time
+from common.time import (block_label, block_name, blocks_for_run, day_label, span_label, time_label, to_ist,
+                         validate_run_time)
 
 UTC = timezone.utc
 
@@ -63,6 +64,17 @@ class TestLabels(unittest.TestCase):
     def test_afternoon_block_same_day(self) -> None:
         afternoon = blocks_for_run(datetime(2026, 11, 5, 0, tzinfo=UTC), n_full_days=1)[1]
         self.assertEqual(block_label(afternoon), "Thu afternoon · 11:30–17:30 IST")
+
+    def test_spans_short_names_and_points(self) -> None:
+        b = blocks_for_run(datetime(2026, 11, 5, 0, tzinfo=UTC), n_full_days=2)
+        self.assertEqual(span_label(b[1], b[2]), "Thu afternoon – evening · 11:30–23:30 IST")
+        self.assertEqual(span_label(b[1], b[3]), "Thu afternoon – night · 11:30 Thu – 05:30 Fri IST")
+        self.assertEqual(span_label(b[3], b[5]), "Thu night – Fri afternoon · 23:30 Thu – 17:30 Fri IST")
+        self.assertEqual(block_name(b[3]), "Thu night")
+        self.assertEqual(time_label(b[2].start_utc), "Thu 17:30 IST")
+
+    def test_day_label(self) -> None:
+        self.assertEqual(day_label(date(2026, 11, 5)), "Thu · 05:30 Thu – 05:30 Fri IST")
 
 
 class TestValidation(unittest.TestCase):
