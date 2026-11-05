@@ -21,12 +21,17 @@ Sources: [OD] https://www.ecmwf.int/en/forecasts/datasets/open-data ·
 | Runs (UTC) | 00/06/12/18 [CF][LIVE] | 00/06/12/18 [OD][LIVE] | 00/06/12/18 | 00/06/12/18 |
 | Steps 00/12z | 0–144 by 3, 150–360 by 6 [OD][LIVE: 85 files] | 0–360 by 6 [OD][LIVE: 61 files] | same as IFS ens [LIVE] | 0–360 by 6 [LIVE] |
 | Steps 06/18z | 0–144 by 3 [OD][LIVE: 49 files] | 0–360 by 6 [OD] | 0–144 by 3 [LIVE]; CF/GH say 90 h — **outdated** | 0–360 by 6 |
-| Members with `tp` | 50 perturbed (`pf`, numbers 1–50) [LIVE index]; control not found in the `ef` file | 50 `pf` + 1 `cf` [LIVE index] | 1 | 1 |
+| Members with `tp` | 50 perturbed (`pf` 1–50) only; **no `cf` at 0.25°** (index types at steps 0/24/150 are all `pf`) [LIVE] | 50 `pf` + 1 `cf` [LIVE index] | 1 | 1 |
+| `tp` units (GRIB `units` key) | **`m`** [LIVE decode] | **`kg m**-2` = mm** [LIVE decode] | `m` | not decoded |
 | Grid / format | 0.25° GRIB2 (0.1° also from 2026-10-20) [OD] | 0.25° only, GRIB2 [OD] | 0.25° / 0.1° | 0.25° |
 | `tp` field size | ~400 KB per global field [LIVE `_length`] | ~450 KB | ~390 KB | ~365 KB |
 | `ep` probabilities | 00/12z only [OD][GH][LIVE: none at 06z] | present at 00z [LIVE] | – | – |
 
-- `tp` units: metres [GH]. "Accumulated from forecast start" is **not stated** in OD/CF/GH. The index shows `step: "24"`, not a range. → Verify by decoding GRIB (first ingest test).
+- `tp` accumulation, verified by ecCodes decode of 20261104 00z member 1 (+AIFS control), steps 6/24/48: both models `stepType=accum`, `stepRange=0-6/0-24/0-48`, PDT 4.11, `typeOfStatisticalProcessing=1` → accumulated from forecast start.
+- **Units differ: IFS `m`, AIFS `kg m**-2` (mm).** GH's "m" applies to IFS only. Convert by reading the GRIB `units` key; unknown unit → error.
+- Differencing gives small negatives (packing): IFS ≥ −0.06 mm at ~1 % of points; AIFS −0.03/−0.06 mm (1/32, 1/16 mm steps).
+- Grid 721×1440, first point lat 90, **lon 180**, 0.25° → normalise longitudes before cropping.
+- Measured download, 10 days, 6-hourly, tp only, byte ranges (20261104): **00z 2,225 MB** (IFS 994 + AIFS 1,091 tp; 140 MB index files; 4,160 requests); **12z 2,371 MB** (4,368 requests). Global fields: cropping happens after download.
 - Retention: "most recent 12 forecast runs ... approximately 2–3 days" [OD]. LIVE showed 4 date folders on 5 Nov. → **Past forecasts must be archived by us** for any verification.
 - Release delay: "7 and 9 hours after" run start [GH]; AIFS released as soon as produced [OD].
 - Download: `.index` files give `_offset`/`_length` per field → HTTP byte-range fetch of `tp` only [LIVE].

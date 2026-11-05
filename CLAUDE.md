@@ -40,7 +40,7 @@ If any answer is "not sure", investigate first. Do not guess.
 - **One job per function.** Short, pure where possible (data in → data out, no hidden I/O).
 - **Shared helpers live in one place:**
   - `common/units.py` — metres↔mm, rates, rounding
-  - `common/time.py` — UTC↔IST, IMD day (08:30–08:30 IST = 03:00–03:00 UTC), run/step math
+  - `common/time.py` — UTC↔IST, app day (05:30–05:30 IST = 00:00–00:00 UTC, four 6-h blocks; see DECISIONS.md), run/step math
   - `common/grid.py` — cropping, longitude normalisation, nearest/bilinear lookup
   - `common/io.py` — reading/writing products, paths
   - `common/config.py` — all constants: thresholds, regions, models, URLs
