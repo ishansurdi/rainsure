@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
-      contents: read
+      contents: write # upload frontend_build.log to the release when the frontend build fails
       pages: write # deploy-pages README: required
       id-token: write # deploy-pages README: required
     environment:
@@ -135,9 +135,11 @@ jobs:
 
       - name: Test and build the frontend next to the data
         run: |
-          npm ci --prefix frontend --no-fund --no-audit
-          npm --prefix frontend test
-          npm --prefix frontend run build
+          set -o pipefail
+          # on failure the log goes to the release as frontend_build.log, readable without a GitHub login
+          if ! { npm ci --prefix frontend --no-fund --no-audit && npm --prefix frontend test && npm --prefix frontend run build; } 2>&1 | tee frontend_build.log; then
+            gh release upload archive frontend_build.log --clobber; exit 1
+          fi
           cp -r frontend/dist/. site/
           { echo "## Frontend"; echo '```'; du -sh frontend/dist; ls -l frontend/dist/assets | awk '{print $5, $9}'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
