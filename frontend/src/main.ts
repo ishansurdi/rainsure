@@ -58,12 +58,13 @@ function renderLegend(): void {
   const swatch = (color: string, short: string, long: string) =>
     `<span class="row"><i style="background:${color}"></i>${short}<span class="long">&nbsp;${long}</span></span>`;
   if (view.layer === "chance") {
-    el.innerHTML = `<b>Chance of ≥ 2.5 mm · ${esc(meta.blocks[sel].label)}</b><div class="swatches">` +
+    el.innerHTML = `<b>Chance of ≥ 2.5 mm<span class="long"> · ${esc(meta.blocks[sel].label)}</span></b><div class="swatches">` +
       CHANCE_BINS.map((b) => swatch(b.color, b.label.split(" (")[1].replace(")", ""), b.label.split(" (")[0].toLowerCase())).join("") +
       `</div><div class="note">Forecasts of 100 with ≥ 2.5 mm. Under 25: no colour. Faded = forecast unsettled.</div>`;
   } else {
     const d = dayIndexOf(sel);
-    const title = d < 0 ? "Day total · not available for this part-day" : `Day total · ${esc(meta.days[d].label)}`;
+    const title = d < 0 ? "Day total · not available for this part-day"
+      : `Day total · ${esc(meta.days[d].label.split(" · ")[0])}<span class="long"> · ${esc(meta.days[d].label.split(" · ")[1] ?? "")}</span>`;
     el.innerHTML = `<b>${title}</b><div class="swatches">` +
       AMOUNT_BINS.map((b) => swatch(b.color, b.label.split(" (")[0], `(${b.label.split(" (")[1]}`)).join("") +
       `</div><div class="note">Median of 100 forecasts, IMD categories. Same for every block of the day.</div>`;
