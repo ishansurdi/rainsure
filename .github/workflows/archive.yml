@@ -14,6 +14,7 @@ on:
       - "process/**"
       - "store/**"
       - "common/**"
+      - "frontend/**"
       - "requirements-pipeline.txt"
 
 permissions:
@@ -117,9 +118,6 @@ jobs:
           gh release download archive -D dl -p "tp_*_${run}.*"
           if [ "$prev" != "-" ]; then gh release download archive -D dl -p "tp_*_${prev}.*"; fi
           python -m store.publish --archive-dir dl --run "$run" --prev "$prev" --site site
-          if [ -d frontend ]; then cp -r frontend/. site/; else
-            echo '<!doctype html><meta charset="utf-8"><title>rain-trust</title><p>Frontend coming soon. Data: <a href="data/latest.json">data/latest.json</a></p>' > site/index.html
-          fi
           {
             echo "## Published $run (previous $prev)"
             echo '```'
@@ -128,6 +126,20 @@ jobs:
             echo "largest tile: $(ls -S site/data/$run/points | head -1) $(ls -lS site/data/$run/points | sed -n 2p | awk '{print $5}') bytes"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Test and build the frontend next to the data
+        run: |
+          npm ci --prefix frontend --no-fund --no-audit
+          npm --prefix frontend test
+          npm --prefix frontend run build
+          cp -r frontend/dist/. site/
+          { echo "## Frontend"; echo '```'; du -sh frontend/dist; ls -l frontend/dist/assets | awk '{print $5, $9}'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-pages-artifact@v5
         with:

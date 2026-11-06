@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Will it rain where you are in India, when, and how sure is that? 100 ECMWF forecasts, physics and AI." />
+    <meta name="theme-color" content="#F5F0E6" />
+    <title>rain-trust · rain chances for India</title>
+  </head>
+  <body>
+    <div id="map" aria-label="Map of rain chances"></div>
+    <header class="top">
+      <div class="search">
+        <input id="q" type="search" autocomplete="off" placeholder="Search a place in India" aria-label="Search a place in India" />
+        <ul id="results" class="results" role="listbox" hidden></ul>
+      </div>
+      <div class="chips" role="radiogroup" aria-label="Map layer">
+        <button class="chip" data-layer="chance" role="radio">How likely?</button>
+        <button class="chip" data-layer="amount" role="radio">How much rain?</button>
+      </div>
+      <div class="overlays">
+        <div id="legend" class="legend card" aria-live="polite"></div>
+        <div id="issued" class="issued card">Loading forecast…</div>
+      </div>
+    </header>
+    <button id="locate" class="locate card" aria-label="Use my location" title="Use my location">◎</button>
+    <section id="sheet" class="sheet" aria-label="Forecast for the selected place">
+      <div class="handle" id="handle" role="button" tabindex="0" aria-label="Drag to expand"></div>
+      <div id="sheet-body" class="sheet-body">
+        <div class="skeleton"><span></span><span></span><span></span><span></span></div>
+      </div>
+      <footer class="foot"><a href="#about" id="about-link">About, credits and API</a></footer>
+    </section>
+    <dialog id="about" class="about"></dialog>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
