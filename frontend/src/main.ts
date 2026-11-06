@@ -9,7 +9,7 @@ import { cellCentre, cellIndex } from "./grid";
 import { AMOUNT_BINS, CHANCE_BINS, amountBin, chanceBin, paintSlot } from "./layers";
 import { createMap, rowsFor, showRain } from "./map";
 import { nearestPlace, searchPlaces } from "./search";
-import { initSheet } from "./sheet";
+import { initSheet, setFirstSnap } from "./sheet";
 import { blockKey, blockParts, currentBlock, dataStatus, formatIst } from "./time";
 import type { Cell, Meta, Tile } from "./types";
 import { parseState, stateToSearch, type LayerId, type ViewState } from "./url";
@@ -17,6 +17,7 @@ import { parseState, stateToSearch, type LayerId, type ViewState } from "./url";
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const LAST_PLACE = "rain-trust:last-place";
+const DEBUG = new URLSearchParams(location.search).has("debug"); // read before the URL is rewritten by syncUrl
 
 let meta: Meta;
 let map: MLMap | null = null;
@@ -89,7 +90,7 @@ function timelineHtml(cell: Cell): string {
     const dayStart = meta.blocks[k].app_day !== lastDay && k !== start;
     lastDay = meta.blocks[k].app_day;
     const differ = (cell.bt[k][2] ?? -1) >= 0;
-    const h = n === 0 ? 2 : 4 + n * 0.3; // visible from 1 forecast, still ordered: 8 -> 6.4 px, 18 -> 9.4 px, 100 -> 34 px
+    const h = n === 0 ? 2 : 3 + n * 0.27; // visible from 1 forecast, still ordered: 8 -> 5.2 px, 18 -> 7.9 px, 100 -> 30 px
     html += `<button class="tb${dayStart ? " daystart" : ""}" data-k="${k}" aria-pressed="${k === sel}"
       aria-label="${esc(meta.blocks[k].label)}: ${n} of 100 forecasts give at least 2.5 mm${differ ? "; physics and AI models disagree" : ""}">
       <span class="now">${k === kNow ? "now" : differ ? '<i class="mark" title="Physics and AI models disagree"></i>' : ""}</span><span class="bar${n >= 25 ? " wet" : ""}" style="height:${h}px"></span>
@@ -132,13 +133,18 @@ function renderSheet(): void {
   if (!performance.getEntriesByName("answer-visible").length) performance.mark("answer-visible"); // speed check, D62
   const settled = S[cell.bt[sel][1]];
   const models = (cell.bt[sel][2] ?? -1) >= 0 ? `<p class="models">${esc(S[cell.bt[sel][2]])}</p>` : "";
-  body.innerHTML = `${head}${coords}
+  const ok = settled.startsWith("Forecast settled.");
+  const chip = settled.split(/[:.]/)[0]; // "Forecast settled" / "Forecast fairly settled" / "Forecast unsettled"
+  // At the 40 % snap: name + trust chip, summary, timeline. The selected block's sentences follow the timeline.
+  body.innerHTML = `<div class="head-row"><h2 class="place">${esc(place.name)}</h2>
+      <span class="trust ${ok ? "settled" : "unsettled"}" title="${esc(settled)}">${esc(chip)}</span></div>${coords}
     <p class="summary">${esc(S[cell.s[kNow]])}</p>
-    <p class="block-answer">${esc(S[cell.bt[sel][0]])}</p>
-    <p class="pill ${settled.startsWith("Forecast settled.") ? "settled" : "unsettled"}">${esc(settled)}</p>
-    ${models}
     ${timelineHtml(cell)}
+    <p class="block-answer">${esc(S[cell.bt[sel][0]])}</p>
+    <p class="pill ${ok ? "settled" : "unsettled"}">${esc(settled)}</p>
+    ${models}
     <div id="details"><div class="skeleton"><span></span><span></span></div></div>`;
+  fitSheet();
   $("timeline").querySelectorAll<HTMLButtonElement>(".tb").forEach((b) => (b.onclick = () => selectBlock(Number(b.dataset.k))));
   const tl = $("timeline"), pressed = tl.querySelector<HTMLElement>('[aria-pressed="true"]');
   if (pressed) tl.scrollLeft = pressed.offsetLeft - tl.offsetLeft - tl.clientWidth / 2 + pressed.clientWidth / 2; // sideways only
@@ -151,6 +157,16 @@ function renderSheet(): void {
     const el = document.getElementById("details");
     if (el) el.innerHTML = `<p class="note">Details didn’t load. Check the connection.</p>`;
   });
+}
+
+/** Phone: raise the first snap just enough that the whole timeline shows (never above 55 % of the screen). */
+function fitSheet(): void {
+  if (innerWidth >= 1024) return;
+  const tl = document.getElementById("timeline");
+  if (!tl) return;
+  const sheetTop = $("sheet").getBoundingClientRect().top;
+  const need = tl.getBoundingClientRect().bottom - sheetTop + $("sheet-body").scrollTop + 12; // px below the sheet top
+  setFirstSnap(Math.max(0.45, Math.min(0.6, 1 - need / innerHeight)));
 }
 
 function syncUrl(): void {
@@ -302,8 +318,8 @@ async function start(): Promise<void> {
     if (!mp) return;
     map = mp;
     map.once("idle", () => performance.mark("map-visible")); // first frame with basemap tiles drawn (speed check, D62)
-    // inspection handle for checks like the disputed-label audit (D61); only with ?debug in the URL
-    if (new URLSearchParams(location.search).has("debug")) (window as unknown as { rtMap: MLMap }).rtMap = mp;
+    // inspection handle for checks like the disputed-label audit (D61); only with ?debug in the opening URL
+    if (DEBUG) (window as unknown as { rtMap: MLMap }).rtMap = mp;
     map.on("click", (e: MapMouseEvent) => void setPlace(e.lngLat.lat, e.lngLat.lng, "Selected point"));
     if (place) placeMarker(place.lat, place.lon);
     void renderMap().catch(() => undefined);

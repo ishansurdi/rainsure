@@ -1,10 +1,15 @@
 // Draggable bottom sheet with snap points (phone). On desktop the sheet is a fixed side panel (CSS).
 const SNAPS = [0.6, 0.15, 0.0]; // sheet top as a share of the viewport height: ~40 %, ~85 %, full
+let current = 0;
+const set = (topFrac: number) => document.documentElement.style.setProperty("--sheet-top", `${(topFrac * 100).toFixed(1)}vh`);
+
+/** Move the first (~40 %) snap, e.g. so the whole timeline fits; applied now if the sheet sits there. */
+export function setFirstSnap(topFrac: number): void {
+  SNAPS[0] = topFrac;
+  if (current === 0) set(topFrac);
+}
 
 export function initSheet(sheet: HTMLElement, handle: HTMLElement): (snap: number) => void {
-  const root = document.documentElement;
-  let current = 0;
-  const set = (topFrac: number) => root.style.setProperty("--sheet-top", `${(topFrac * 100).toFixed(1)}vh`);
   const snapTo = (n: number) => { current = n; set(SNAPS[n]); };
   snapTo(0);
   let startY = 0, startTop = 0, dragging = false;
