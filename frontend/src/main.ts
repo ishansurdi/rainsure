@@ -300,6 +300,8 @@ async function start(): Promise<void> {
   void mapReady.then((mp) => {
     if (!mp) return;
     map = mp;
+    // inspection handle for checks like the disputed-label audit (D61); only with ?debug in the URL
+    if (new URLSearchParams(location.search).has("debug")) (window as unknown as { rtMap: MLMap }).rtMap = mp;
     map.on("click", (e: MapMouseEvent) => void setPlace(e.lngLat.lat, e.lngLat.lng, "Selected point"));
     if (place) placeMarker(place.lat, place.lon);
     void renderMap().catch(() => undefined);
