@@ -102,7 +102,7 @@ jobs:
       id-token: write # deploy-pages README: required
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PYTHONNOUSERSITE: "1"
@@ -180,8 +180,17 @@ jobs:
         with:
           path: site
 
+      # deploy-pages waits at most 10 min (600000 ms is its maximum; a larger value is clamped, as its warning said on
+      # 2026-11-06). Some deploys of the ~1,000 files took longer that evening, so one retry of the same artifact.
       - id: deployment
         if: steps.decide.outputs.skip != 'true'
+        continue-on-error: true
         uses: actions/deploy-pages@v5
         with:
-          timeout: 1200000 # ms; the default 10 min ran out on 2026-11-06 while Pages processed ~1,000 files
+          timeout: 600000
+
+      - id: deployment_retry
+        if: steps.decide.outputs.skip != 'true' && steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v5
+        with:
+          timeout: 600000

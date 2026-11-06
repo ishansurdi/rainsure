@@ -26,7 +26,10 @@ Status: approved; P0 and P1 done, P2 in progress.
 - [x] Step 1 for the frontend: block percentiles/medians + gap layers (D57), 200-char summary with merged spread days (D56)
 - [x] Frontend milestone 1 (2026-11-06): home on real data live at https://ishansurdi.github.io/rainsure/ — map with chance / day-total layers, search, answer sheet with tile summary, timeline, about page with API status; deployed by the publish job (D58); ECMWF AIFS source found and logged (D59)
 - [x] Frontend milestone 2 (2026-11-06): how physics and AI disagree, said once (D60; rules + shares on real runs), nearest place name, visible low bars, details panel (is-it-changing, 100 dots, meteogram, day totals; lazy chunk 1.6 kB gzip), About "how to read" with the Storm Hans case quote
-- [ ] Frontend milestone 3: states (loading, API asleep, stale, expired, outside, no results, location denied, tile fails); desktop polish folded in
+- [x] Frontend milestone 3 (2026-11-06): all states tested with real failures; disputed-label audit and fix (D63); speed work measured (D62); timeline visible at 390 px; hourly outside trigger (D64)
+- [x] PageSpeed fixes (accessibility, render-blocking CSS); full README with measurements and findings
+- [x] Physics / AI / gap map toggle under "Do models agree?" (split slider not built: toggle first, per author)
+- [ ] Readability-test wording fixes (author's test); final live check at 390/1440 px; feature freeze ~01:00 IST 2026-11-07
 - [ ] Frontend (P4) notes from 2026-11-05: Vite + TS, MapLibre (pinned), IBM Plex Sans self-hosted, hand SVG charts, vitest; GeoNames places file; mapshaper (dev-only) for the Natural Earth India-POV boundary; "Day total" label on the amount layer; about page with API link, /docs and awake status; look for an ECMWF source on AIFS extremes (quote + link, else leave out); ochre text #855606
 
 ## Verified data facts (checked 2026-11-05)
