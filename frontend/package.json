@@ -8,14 +8,13 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "build:boundary": "mapshaper ../data-src/ne_10m_ind.geojson -clip bbox=60,0,105,42 -simplify 8% keep-shapes -innerlines -o format=geojson precision=0.001 public/geo/borders.json && mapshaper ../data-src/ne_10m_ind.geojson -filter \"ADM0_A3 === 'IND'\" -clip bbox=60,0,105,42 -simplify 8% keep-shapes -lines -o format=geojson precision=0.001 public/geo/india.json"
+    "build:boundary": "npx --yes mapshaper@0.7.97 ../data-src/ne_10m_ind.geojson -clip bbox=60,0,105,42 -simplify 8% keep-shapes -innerlines -o format=geojson precision=0.001 public/geo/borders.json && npx --yes mapshaper@0.7.97 ../data-src/ne_10m_ind.geojson -filter \"ADM0_A3 === 'IND'\" -clip bbox=60,0,105,42 -simplify 8% keep-shapes -lines -o format=geojson precision=0.001 public/geo/india.json"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "5.3.0",
     "maplibre-gl": "6.15.0"
   },
   "devDependencies": {
-    "mapshaper": "0.7.97",
     "typescript": "7.0.2",
     "vite": "8.3.5",
     "vitest": "4.1.12"
