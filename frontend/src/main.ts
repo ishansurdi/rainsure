@@ -18,6 +18,11 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const LAST_PLACE = "rain-trust:last-place";
 const DEBUG = new URLSearchParams(location.search).has("debug"); // read before the URL is rewritten by syncUrl
+// ?now=2026-11-08T06:00:00Z views the forecast as of that time (states and demos), like the API's at=; kept in the URL
+const NOW_PARAM = new URLSearchParams(location.search).get("now");
+const NOW_FIXED = NOW_PARAM && !Number.isNaN(Date.parse(NOW_PARAM)) ? new Date(NOW_PARAM) : null;
+const now = (): Date => NOW_FIXED ?? new Date();
+let locationNote = "";
 
 let meta: Meta;
 let map: MLMap | null = null;
@@ -35,6 +40,11 @@ function renderIssued(): void {
   // The forecast's age is its ECMWF run start, not when we last rebuilt the site (a frontend deploy changes that).
   const el = $("issued");
   el.textContent = `Forecast run ${formatIst(meta.run_time_utc)}`;
+  const banner = $("banner"), status = dataStatus(meta, now());
+  banner.hidden = status === "fresh";
+  banner.textContent = status === "stale"
+    ? `Showing the forecast from the run of ${formatIst(meta.run_time_utc)}. A newer one is not available yet.`
+    : status === "expired" ? "No current forecast: the newest one we have is more than 72 hours old." : "";
   el.title = `ECMWF run ${meta.run_id.slice(8)} UTC on ${meta.run_id.slice(6, 8)}/${meta.run_id.slice(4, 6)}; products built ${formatIst(meta.processed_at_utc)}`;
 }
 
@@ -44,7 +54,7 @@ function dayIndexOf(k: number): number {
 
 function renderLegend(): void {
   const el = $("legend");
-  if (dataStatus(meta, new Date()) === "expired") { el.innerHTML = "<b>No current forecast</b>"; return; }
+  if (dataStatus(meta, now()) === "expired") { el.innerHTML = "<b>No current forecast</b>"; return; }
   const swatch = (color: string, short: string, long: string) =>
     `<span class="row"><i style="background:${color}"></i>${short}<span class="long">&nbsp;${long}</span></span>`;
   if (view.layer === "chance") {
@@ -63,7 +73,7 @@ function renderLegend(): void {
 async function renderMap(): Promise<void> {
   if (!map) return;
   const g = meta.grid;
-  if (dataStatus(meta, new Date()) === "expired") { showRain(map, g, null); return; }
+  if (dataStatus(meta, now()) === "expired") { showRain(map, g, null); return; }
   if (view.layer === "chance") {
     const [v, s] = await Promise.all([loadLayer(meta, "block_pooled"), loadLayer(meta, "block_settled")]);
     showRain(map, g, paintSlot(v, s, sel, g.n_lat, g.n_lon, rowsFor(g), (c) => {
@@ -101,18 +111,23 @@ function timelineHtml(cell: Cell): string {
 
 function renderSheet(): void {
   const body = $("sheet-body");
-  const status = dataStatus(meta, new Date());
+  const status = dataStatus(meta, now());
   if (!place) {
     body.innerHTML = `<h2 class="place">Will it rain where you are?</h2>
       <p class="summary">Search for a place in India, tap the map, or use your location.</p>
       <div><button class="btn dark" id="use-loc">Use my location</button></div>
+      ${locationNote ? `<p class="note" role="status">${esc(locationNote)}</p>` : ""}
       <p class="note">100 forecasts from ECMWF: 50 from the physics model (IFS) and 50 from the AI model (AIFS).</p>`;
     $("use-loc").onclick = locate;
     return;
   }
   const head = `<h2 class="place">${esc(place.name)}</h2>`;
   if (placeError === "outside") {
-    body.innerHTML = `${head}<p class="summary">We cover India and nearby areas (6.5–37.25 N, 68–97.5 E). This point is outside.</p>`;
+    const g = meta.grid, south = g.lat_first - (g.n_lat - 1) * g.step_deg, east = g.lon_first + (g.n_lon - 1) * g.step_deg;
+    const near = { lat: Math.min(g.lat_first, Math.max(south, place.lat)), lon: Math.min(east, Math.max(g.lon_first, place.lon)) };
+    body.innerHTML = `${head}<p class="summary">We cover India and nearby areas (${south}–${g.lat_first} N, ${g.lon_first}–${east} E). This point (${place.lat.toFixed(2)} N, ${place.lon.toFixed(2)} E) is outside.</p>
+      <div><button class="btn dark" id="go-near">Go to the nearest covered point (${near.lat.toFixed(2)} N, ${near.lon.toFixed(2)} E)</button></div>`;
+    $("go-near").onclick = () => void setPlace(near.lat, near.lon, "Selected point");
     return;
   }
   if (placeError === "tile") {
@@ -171,7 +186,9 @@ function fitSheet(): void {
 
 function syncUrl(): void {
   view = { ...view, lat: place?.lat, lon: place?.lon, name: place?.name, block: blockKey(meta.blocks[sel]) };
-  history.replaceState(null, "", `${location.pathname}${stateToSearch(view)}`);
+  const q = stateToSearch(view);
+  const keep = NOW_FIXED ? `${q ? "&" : "?"}now=${encodeURIComponent(NOW_PARAM!)}` : "";
+  history.replaceState(null, "", `${location.pathname}${q}${keep}`);
 }
 
 function renderAll(): void {
@@ -244,10 +261,14 @@ function placeMarker(lat: number, lon: number, animate = true): void {
 }
 
 function locate(): void {
-  if (!navigator.geolocation) return;
+  const off = () => { // denied or unavailable: one quiet line, never a repeated prompt
+    locationNote = "Location is off or unavailable. Search for a place or tap the map.";
+    if (!place) renderSheet();
+  };
+  if (!navigator.geolocation) return off();
   navigator.geolocation.getCurrentPosition(
     (p) => void setPlace(p.coords.latitude, p.coords.longitude, "Your location"),
-    () => { /* denied or unavailable: search and map tap still work; no nagging */ },
+    off,
     { timeout: 10000, maximumAge: 600000 },
   );
 }
@@ -263,7 +284,7 @@ function initSearch(): void {
     if (q.value !== text) return;
     list.innerHTML = hits.length
       ? hits.map((p, n) => `<li role="option" data-n="${n}">${esc(p[0])} <small>${esc(p[1])}</small></li>`).join("")
-      : `<li class="none">No place called “${esc(text)}” in our list of Indian places.</li>`;
+      : `<li class="none">No place called “${esc(text)}” in our list of Indian places. Try a nearby town, or tap the map.</li>`;
     list.hidden = false;
     list.querySelectorAll<HTMLLIElement>("li[data-n]").forEach((li) => (li.onclick = () => {
       const p = hits[Number(li.dataset.n)];
@@ -329,12 +350,12 @@ async function start(): Promise<void> {
   // the answer never waits for the map; the map opens directly at the place (one set of tiles, no fly-in, D62)
   const mapReady = createMap("map", PRELOAD, first ? [first.lon, first.lat] : [80, 22], first ? 6.5 : 3.6).catch(() => null);
   meta = await loadMeta();
-  kNow = currentBlock(meta, new Date());
+  kNow = currentBlock(meta, now());
   const fromUrl = view.block ? meta.blocks.findIndex((b) => blockKey(b) === view.block) : -1;
   sel = fromUrl >= Math.max(0, kNow ?? 0) ? fromUrl : kNow ?? 0;
   renderIssued();
   void mapReady.then((mp) => {
-    if (!mp) return;
+    if (!mp) { $("map").innerHTML = `<p class="map-fail card">The map didn’t load. The forecast in the panel still works.</p>`; return; }
     map = mp;
     map.once("idle", () => performance.mark("map-visible")); // first frame with basemap tiles drawn (speed check, D62)
     // inspection handle for checks like the disputed-label audit (D61); only with ?debug in the opening URL
