@@ -30,7 +30,7 @@ Status: approved; P0 and P1 done, P2 in progress.
 - [x] PageSpeed fixes (accessibility, render-blocking CSS); full README with measurements and findings
 - [x] Physics / AI / gap map toggle under "Do models agree?" (split slider not built: toggle first, per author)
 - [x] Plain-language wording pass instead of a user test (no tester available, D65)
-- [ ] Final live check at 390/1440 px; feature freeze ~01:00 IST 2026-11-07
+- [x] Final live check 2026-11-06 at 390/1440 px (5 cities, all states, model views); found and fixed the model switch showing on every layer; feature freeze
 - [ ] Frontend (P4) notes from 2026-11-05: Vite + TS, MapLibre (pinned), IBM Plex Sans self-hosted, hand SVG charts, vitest; GeoNames places file; mapshaper (dev-only) for the Natural Earth India-POV boundary; "Day total" label on the amount layer; about page with API link, /docs and awake status; look for an ECMWF source on AIFS extremes (quote + link, else leave out); ochre text #855606
 
 ## Verified data facts (checked 2026-11-05)
