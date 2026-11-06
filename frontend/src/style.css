@@ -72,7 +72,7 @@ a { color: var(--ink); }
 .coords { font-size: 11px; color: var(--ash); margin: -8px 0 0; }
 .models { margin: 0; padding: 10px 12px; border: 1.5px dashed var(--plum); border-radius: 8px; font-size: 14px; line-height: 1.45; color: var(--ink); }
 .models b { color: var(--plum); }
-.tb .mark { width: 6px; height: 6px; border-radius: 3px; background: var(--plum); justify-self: end; margin-right: 4px; }
+.tb .mark { display: inline-block; width: 8px; height: 8px; border-radius: 4px; border: 1.5px dashed var(--plum); background: var(--card); }
 .h3 { font-size: 15px; font-weight: 600; margin: 4px 0 -4px; }
 .details { display: grid; gap: 12px; padding-top: 4px; border-top: 1px solid var(--rule); }
 .changing { font-size: 14px; margin: 0; }

@@ -89,7 +89,7 @@ function timelineHtml(cell: Cell): string {
     const dayStart = meta.blocks[k].app_day !== lastDay && k !== start;
     lastDay = meta.blocks[k].app_day;
     const differ = (cell.bt[k][2] ?? -1) >= 0;
-    const h = n === 0 ? 2 : Math.max(6, n * 0.34); // any rain at all stays visible
+    const h = n === 0 ? 2 : 4 + n * 0.3; // visible from 1 forecast, still ordered: 8 -> 6.4 px, 18 -> 9.4 px, 100 -> 34 px
     html += `<button class="tb${dayStart ? " daystart" : ""}" data-k="${k}" aria-pressed="${k === sel}"
       aria-label="${esc(meta.blocks[k].label)}: ${n} of 100 forecasts give at least 2.5 mm${differ ? "; physics and AI models disagree" : ""}">
       <span class="now">${k === kNow ? "now" : differ ? '<i class="mark" title="Physics and AI models disagree"></i>' : ""}</span><span class="bar${n >= 25 ? " wet" : ""}" style="height:${h}px"></span>
@@ -169,6 +169,9 @@ function renderAll(): void {
 function selectBlock(k: number): void {
   sel = k;
   renderAll();
+  // bring the tapped block's sentence, pill and model note into view (the sheet may be at 40 %)
+  const body = $("sheet-body"), ans = body.querySelector<HTMLElement>(".block-answer");
+  if (ans) body.scrollTo({ top: ans.offsetTop - body.offsetTop - 8, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }
 
 const UNNAMED = new Set(["Selected point", "Your location"]);
