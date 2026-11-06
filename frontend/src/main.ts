@@ -60,9 +60,12 @@ function renderLegend(): void {
   if (view.layer === "agree") {
     const mv = view.models ?? "gap";
     if (mv === "gap") {
-      el.innerHTML = `<b>Physics vs AI gap<span class="long"> · ${esc(meta.blocks[sel].label)}</span></b><div class="swatches">` +
-        GAP_BINS.map((b) => swatch(b.color, b.label, "")).join("") +
-        `</div><div class="note">Difference in chance of ≥ 2.5 mm, points of 100. Under 20 points: the models agree, no colour.</div>`;
+      const row = (title: string, bins: typeof GAP_BINS, labels: string[]) =>
+        `<div class="gaprow">${title}: ${bins.map((b, n) => `<span class="row"><i style="background:${b.color}"></i>${labels[n]}</span>`).join("")}</div>`;
+      el.innerHTML = `<b>Physics vs AI gap<span class="long"> · ${esc(meta.blocks[sel].label)}</span></b>` +
+        row("Physics wetter", GAP_BINS.slice(0, 3), ["60+", "40–59", "20–39"]) +
+        row("AI wetter", GAP_BINS.slice(3), ["20–39", "40–59", "60+"]) +
+        `<div class="note">Difference in chance of ≥ 2.5 mm, points of 100. Under 20 points: the models agree, no colour.</div>`;
     } else {
       el.innerHTML = `<b>${mv === "ifs" ? "Physics model (IFS)" : "AI model (AIFS)"} · chance of ≥ 2.5 mm<span class="long"> · ${esc(meta.blocks[sel].label)}</span></b><div class="swatches">` +
         CHANCE_BINS.map((b) => swatch(b.color, b.label.split(" (")[1].replace(")", ""), b.label.split(" (")[0].toLowerCase())).join("") +

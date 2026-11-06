@@ -41,9 +41,13 @@ a { color: var(--ink); }
 .legend .note { color: var(--ash); margin-top: 4px; }
 .legend .swatches { display: flex; gap: 8px; flex-wrap: wrap; }
 .legend .swatches .row { gap: 4px; }
+.chip .short { display: none; }
+.legend .gaprow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 @media (max-width: 1023px) {
   .legend { max-width: calc(100% - 150px); }
   .legend .note, .legend .long { display: none; }
+  .chip .long { display: none; } .chip .short { display: inline; }
+  .chip { padding: 0 12px; }
 }
 .issued { padding: 6px 10px; font-size: 12px; font-weight: 500; white-space: nowrap; pointer-events: auto; }
 .banner { margin: 0; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--ochre); background: var(--ochre-fill); color: var(--ochre-text); font-size: 13px; font-weight: 500; pointer-events: auto; }
