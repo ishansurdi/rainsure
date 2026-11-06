@@ -1,10 +1,13 @@
 # Save every 00z/12z ECMWF run (India tp, all members) to the `archive` release before ECMWF deletes it (~3 days).
-# DECISIONS.md D20, D47. Runs every 3 h; each run only fetches what is missing.
+# DECISIONS.md D20, D47, D61. Runs hourly; each run only fetches what is missing.
 name: archive
 
 on:
   schedule:
-    - cron: "23 */3 * * *" # :23 avoids the top-of-hour load where GitHub delays/drops scheduled runs (GitHub docs)
+    # Hourly (D61): GitHub skipped most 3-hourly runs on 2026-11-05/06. Public repo, so Actions minutes are free;
+    # a run with nothing new exits after the pending check and skips the site rebuild.
+    # :23 avoids the top-of-hour load where GitHub delays/drops scheduled runs (GitHub docs).
+    - cron: "23 * * * *"
   workflow_dispatch:
   push:
     branches: [main]
@@ -100,6 +103,8 @@ jobs:
       PYTHONNOUSERSITE: "1"
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history, to find the last commit that changed the site's code
 
       - uses: actions/setup-python@v7
         with:
@@ -110,14 +115,32 @@ jobs:
       - name: Install pinned pipeline dependencies
         run: pip install -r requirements-pipeline.txt
 
-      - name: Pick runs and build products
+      # Skip the rebuild on a scheduled run when the live site already shows the newest run, the same previous run
+      # and was built from the same code (D61). Pushes and manual runs always rebuild.
+      - name: Decide whether the site needs a rebuild
+        id: decide
         run: |
           gh release view archive --json assets --jq '.assets[].name' > existing.txt
           read run prev < <(python -m store.publish --pick --existing existing.txt)
+          sha=$(git log -1 --format=%H -- store process common frontend .github/workflows/archive.yml requirements-pipeline.txt)
+          curl -sf --max-time 30 https://ishansurdi.github.io/rainsure/data/latest.json -o live.json || echo '{}' > live.json
+          live=$(python -c "import json; m=json.load(open('live.json')); print(m.get('run_id'), m.get('previous_run_id') or '-', m.get('source_sha'))")
+          skip=false
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$live" = "$run $prev $sha" ]; then skip=true; fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"; echo "prev=$prev" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"; echo "skip=$skip" >> "$GITHUB_OUTPUT"
+          if [ "$skip" = true ]; then
+            echo "## Publish skipped: $run (previous $prev) is already live, built from ${sha:0:7}" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Build products
+        if: steps.decide.outputs.skip != 'true'
+        run: |
+          run=${{ steps.decide.outputs.run }}; prev=${{ steps.decide.outputs.prev }}
           echo "Publishing $run (previous $prev)"
           gh release download archive -D dl -p "tp_*_${run}.*"
           if [ "$prev" != "-" ]; then gh release download archive -D dl -p "tp_*_${prev}.*"; fi
-          python -m store.publish --archive-dir dl --run "$run" --prev "$prev" --site site
+          python -m store.publish --archive-dir dl --run "$run" --prev "$prev" --site site --source-sha ${{ steps.decide.outputs.sha }}
           {
             echo "## Published $run (previous $prev)"
             echo '```'
@@ -128,12 +151,14 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/setup-node@v7
+        if: steps.decide.outputs.skip != 'true'
         with:
           node-version-file: frontend/.nvmrc
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: Test and build the frontend next to the data
+        if: steps.decide.outputs.skip != 'true'
         run: |
           set -o pipefail
           # on failure the log goes to the release as frontend_build.log, readable without a GitHub login
@@ -144,8 +169,10 @@ jobs:
           { echo "## Frontend"; echo '```'; du -sh frontend/dist; ls -l frontend/dist/assets | awk '{print $5, $9}'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-pages-artifact@v5
+        if: steps.decide.outputs.skip != 'true'
         with:
           path: site
 
       - id: deployment
+        if: steps.decide.outputs.skip != 'true'
         uses: actions/deploy-pages@v5

@@ -44,7 +44,7 @@ def _dir_size(path: Path) -> int:
     return sum(p.stat().st_size for p in path.rglob("*") if p.is_file())
 
 
-def publish(archive_dir: Path, run_id: str, prev_id: str | None, site: Path) -> dict[str, Any]:
+def publish(archive_dir: Path, run_id: str, prev_id: str | None, site: Path, source_sha: str | None = None) -> dict[str, Any]:
     """Build every product of run_id (stability against prev_id) into site/data; return the run metadata."""
     t0 = time.monotonic()
     run_time = datetime.strptime(run_id, "%Y%m%d%H").replace(tzinfo=timezone.utc)
@@ -75,6 +75,7 @@ def publish(archive_dir: Path, run_id: str, prev_id: str | None, site: Path) -> 
     lat, lon = cur.rain[IFS]["latitude"].values, cur.rain[IFS]["longitude"].values
     meta = {
         "run_id": run_id, "run_time_utc": run_time.isoformat(), "previous_run_id": prev_id,
+        "source_sha": source_sha,  # last commit that changed the site's code; the workflow skips unchanged rebuilds (D61)
         "processed_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": {m: {k: cur.rain[m].attrs.get(k) for k in ("sources", "grib_units", "processed_at_utc")}
                    for m in (IFS, AIFS)},
@@ -110,12 +111,13 @@ def main() -> None:
     p.add_argument("--run")
     p.add_argument("--prev")
     p.add_argument("--site", type=Path, default=Path("site"))
+    p.add_argument("--source-sha", help="commit the site's code was built from")
     a = p.parse_args()
     if a.pick:
         cur, prev = pick_runs(set(a.existing.read_text().split()))
         print(cur, prev or "-")
         return
-    publish(a.archive_dir, a.run, None if a.prev in (None, "-") else a.prev, a.site)
+    publish(a.archive_dir, a.run, None if a.prev in (None, "-") else a.prev, a.site, a.source_sha)
 
 
 if __name__ == "__main__":
