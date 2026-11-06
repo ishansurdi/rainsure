@@ -14,7 +14,14 @@ export function hideDisputedNames(layer: Layer): Layer {
   return { ...layer, filter: (filter ? ["all", filter, keep] : keep) as never };
 }
 
-/** The style with border layers removed and disputed place labels filtered out. */
+/** One glyph font for every label: bold and italic stacks each cost their own glyph downloads (~158 kB for 3, D62). */
+export function oneFont(layer: Layer): Layer {
+  const layout = (layer as { layout?: Record<string, unknown> }).layout;
+  if (layer.type !== "symbol" || !layout?.["text-font"]) return layer;
+  return { ...layer, layout: { ...layout, "text-font": ["Noto Sans Regular"] } } as Layer;
+}
+
+/** The style with border layers removed, disputed place labels filtered out and a single label font. */
 export function indiaView(style: StyleSpecification): StyleSpecification {
-  return { ...style, layers: style.layers.filter((l) => !HIDDEN_STYLE_LAYERS.includes(l.id)).map(hideDisputedNames) };
+  return { ...style, layers: style.layers.filter((l) => !HIDDEN_STYLE_LAYERS.includes(l.id)).map(hideDisputedNames).map(oneFont) };
 }

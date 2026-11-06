@@ -8,7 +8,7 @@ const style = {
     { id: "boundary_2", type: "line", source: "openmaptiles", "source-layer": "boundary" },
     { id: "boundary_disputed", type: "line", source: "openmaptiles", "source-layer": "boundary" },
     { id: "label_state", type: "symbol", source: "openmaptiles", "source-layer": "place", filter: ["==", ["get", "class"], "state"] },
-    { id: "label_city", type: "symbol", source: "openmaptiles", "source-layer": "place" },
+    { id: "label_city", type: "symbol", source: "openmaptiles", "source-layer": "place", layout: { "text-font": ["Noto Sans Bold"], "text-size": 12 } },
     { id: "waterway_label", type: "symbol", source: "openmaptiles", "source-layer": "waterway" },
   ],
 } as unknown as StyleSpecification;
@@ -25,5 +25,8 @@ describe("indiaView", () => {
     expect(f).toContain("Gilgit-Baltistan");
     expect(JSON.stringify((out.layers[1] as { filter: unknown }).filter).startsWith('["!",')).toBe(true);
     expect((out.layers[2] as { filter?: unknown }).filter).toBeUndefined();
+  });
+  it("uses one label font and keeps the rest of the layout", () => {
+    expect((out.layers[1] as { layout: unknown }).layout).toEqual({ "text-font": ["Noto Sans Regular"], "text-size": 12 });
   });
 });

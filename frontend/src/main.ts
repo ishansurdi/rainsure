@@ -228,6 +228,7 @@ async function setPlace(lat: number, lon: number, name: string): Promise<void> {
     placeError = "tile";
   }
   renderAll();
+  answerDataReady();
 }
 
 function placeMarker(lat: number, lon: number, animate = true): void {
@@ -301,7 +302,10 @@ function renderAbout(): void {
 }
 
 // ---------- start ----------
-const PRELOAD = preloadMap(); // MapLibre code and the basemap style start downloading at once
+// The answer's data gets the bandwidth first; the map follows when it has arrived, or after 1.5 s at most (D62).
+let answerDataReady: () => void = () => undefined;
+const ANSWER_DATA = new Promise<void>((ok) => { answerDataReady = ok; setTimeout(ok, 1500); });
+const PRELOAD = preloadMap(ANSWER_DATA);
 
 /** Place to open with: the URL's, else the last one seen on this device. */
 function initialPlace(): { lat: number; lon: number; name: string } | null {
@@ -341,6 +345,7 @@ async function start(): Promise<void> {
   });
   if (first) return setPlace(first.lat, first.lon, first.name);
   renderAll();
+  answerDataReady(); // no place yet: nothing else to wait for
   try {
     const perm = await navigator.permissions?.query({ name: "geolocation" as PermissionName });
     if (perm?.state === "granted") locate();

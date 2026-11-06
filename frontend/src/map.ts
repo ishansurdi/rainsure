@@ -13,11 +13,12 @@ const ROWS_PER_CELL = 4;
 let rowMap: Int32Array | null = null;
 let lib: typeof import("maplibre-gl") | null = null;
 
-/** Start loading MapLibre and the style at once (both are needed before the first frame). */
-export function preloadMap(): { lib: Promise<typeof import("maplibre-gl")>; style: Promise<StyleSpecification> } {
+/** Load MapLibre and the style once `after` settles (the answer's data first on slow links, D62). */
+export function preloadMap(after: Promise<unknown>): { lib: Promise<typeof import("maplibre-gl")>; style: Promise<StyleSpecification> } {
+  const go = after.catch(() => undefined);
   return {
-    lib: import("maplibre-gl").then((m) => (lib = m)),
-    style: fetch(STYLE_URL).then((r) => r.json() as Promise<StyleSpecification>),
+    lib: go.then(() => import("maplibre-gl")).then((m) => (lib = m)),
+    style: go.then(() => fetch(STYLE_URL)).then((r) => r.json() as Promise<StyleSpecification>),
   };
 }
 
