@@ -83,6 +83,7 @@ def publish(archive_dir: Path, run_id: str, prev_id: str | None, site: Path) -> 
         "tile_cells": config.TILE_CELLS, "point_tile": "points/t{ti}_{tj}.json (ti = row // tile_cells, "
                                                        "tj = column // tile_cells)",
         "summary_start_blocks": config.SUMMARY_START_BLOCKS,
+        "stale_after_h": config.STALE_AFTER_H,  # frontend reads thresholds from here, never re-declares them
         "blocks": [{"start_utc": b.start_utc.isoformat(), "end_utc": b.end_utc.isoformat(),
                     "app_day": b.app_day.isoformat(), "label": block_label(b)} for b in blocks],
         "days": [{"app_day": str(d)[:10], "label": day_label(datetime.fromisoformat(str(d)[:10]).date())}

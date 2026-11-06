@@ -12,3 +12,6 @@ __pycache__/
 data/
 *.grib2
 *.idx
+node_modules/
+frontend/dist/
+data-src/
