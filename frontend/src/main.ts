@@ -31,7 +31,10 @@ let apiState: ApiState | "checking" = "checking";
 
 // ---------- rendering ----------
 function renderIssued(): void {
-  $("issued").textContent = `Issued ${formatIst(meta.processed_at_utc)}`;
+  // The forecast's age is its ECMWF run start, not when we last rebuilt the site (a frontend deploy changes that).
+  const el = $("issued");
+  el.textContent = `Forecast run ${formatIst(meta.run_time_utc)}`;
+  el.title = `ECMWF run ${meta.run_id.slice(8)} UTC on ${meta.run_id.slice(6, 8)}/${meta.run_id.slice(4, 6)}; products built ${formatIst(meta.processed_at_utc)}`;
 }
 
 function dayIndexOf(k: number): number {

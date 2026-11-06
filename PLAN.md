@@ -24,7 +24,9 @@ Status: approved; P0 and P1 done, P2 in progress.
 - [x] render.yaml for the API (D54); author creates the Blueprint in the Render dashboard
 - [x] Wireframes in Figma (https://www.figma.com/design/olUt3VOYCvWi7k4UORTPBv), 12 resolutions approved
 - [x] Step 1 for the frontend: block percentiles/medians + gap layers (D57), 200-char summary with merged spread days (D56)
-- [ ] Frontend (P4), starts 2026-11-06 with the author: Vite + TS, MapLibre (pinned), IBM Plex Sans self-hosted, hand SVG charts, vitest; GeoNames places file; mapshaper (dev-only) for the Natural Earth India-POV boundary; "Day total" label on the amount layer; about page with API link, /docs and awake status; look for an ECMWF source on AIFS extremes (quote + link, else leave out); ochre text #855606
+- [x] Frontend milestone 1 (2026-11-06): home on real data live at https://ishansurdi.github.io/rainsure/ — map with chance / day-total layers, search, answer sheet with tile summary, timeline, about page with API status; deployed by the publish job (D58); ECMWF AIFS source found and logged (D59)
+- [ ] Frontend milestone 2: details (day totals, meteogram, 100-dot grid, is-it-changing); 3: states; 4: desktop polish
+- [ ] Frontend (P4) notes from 2026-11-05: Vite + TS, MapLibre (pinned), IBM Plex Sans self-hosted, hand SVG charts, vitest; GeoNames places file; mapshaper (dev-only) for the Natural Earth India-POV boundary; "Day total" label on the amount layer; about page with API link, /docs and awake status; look for an ECMWF source on AIFS extremes (quote + link, else leave out); ochre text #855606
 
 ## Verified data facts (checked 2026-11-05)
 Sources: [OD] https://www.ecmwf.int/en/forecasts/datasets/open-data ·
