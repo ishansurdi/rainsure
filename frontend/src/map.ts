@@ -1,21 +1,33 @@
 // MapLibre map: OpenFreeMap basemap without its borders, our India-POV borders, and the rain image on top.
-import { Map as MLMap, setWorkerUrl, type ImageSource, type StyleSpecification } from "maplibre-gl";
+// MapLibre is loaded with a dynamic import so the answer sheet never waits for it (D62).
+import type { ImageSource, Map as MLMap, Marker, StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 // MapLibre 6 looks for its worker next to its own module file, which bundlers move; ship the worker as an asset.
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
-import { HIDDEN_STYLE_LAYERS, STYLE_URL } from "./config";
+import { indiaView } from "./basemap";
+import { STYLE_URL } from "./config";
 import { gridBounds, mercatorRowMap } from "./grid";
 import type { Grid } from "./types";
 
 const ROWS_PER_CELL = 4;
 let rowMap: Int32Array | null = null;
+let lib: typeof import("maplibre-gl") | null = null;
 
-export async function createMap(container: string): Promise<MLMap> {
-  setWorkerUrl(new URL(workerUrl, location.href).href);
-  const style = (await (await fetch(STYLE_URL)).json()) as StyleSpecification;
-  style.layers = style.layers.filter((l) => !HIDDEN_STYLE_LAYERS.includes(l.id));
-  const map = new MLMap({
-    container, style, center: [80, 22], zoom: 3.6, minZoom: 3, maxZoom: 11,
+/** Start loading MapLibre and the style at once (both are needed before the first frame). */
+export function preloadMap(): { lib: Promise<typeof import("maplibre-gl")>; style: Promise<StyleSpecification> } {
+  return {
+    lib: import("maplibre-gl").then((m) => (lib = m)),
+    style: fetch(STYLE_URL).then((r) => r.json() as Promise<StyleSpecification>),
+  };
+}
+
+/** Create the map, opening directly at `center`/`zoom` when the place is already known (one set of tiles). */
+export async function createMap(container: string, pre: ReturnType<typeof preloadMap>, center: [number, number],
+  zoom: number): Promise<MLMap> {
+  const [ml, style] = await Promise.all([pre.lib, pre.style]);
+  ml.setWorkerUrl(new URL(workerUrl, location.href).href);
+  const map = new ml.Map({
+    container, style: indiaView(style), center, zoom, minZoom: 3, maxZoom: 11,
     attributionControl: { compact: true }, dragRotate: false, pitchWithRotate: false,
   });
   map.touchZoomRotate.disableRotation();
@@ -29,6 +41,11 @@ export async function createMap(container: string): Promise<MLMap> {
   map.addLayer({ id: "borders", type: "line", source: "borders", paint: { "line-color": "#6b645a", "line-width": 0.8 } }, firstLabel);
   map.addLayer({ id: "india", type: "line", source: "india", paint: { "line-color": "#22201c", "line-width": 1.3 } }, firstLabel);
   return map;
+}
+
+/** A marker element at lon/lat (MapLibre must already be loaded). */
+export function makeMarker(map: MLMap, el: HTMLElement, lon: number, lat: number): Marker | null {
+  return lib ? new lib.Marker({ element: el }).setLngLat([lon, lat]).addTo(map) : null;
 }
 
 function transparentPng(): string {

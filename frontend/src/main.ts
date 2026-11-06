@@ -2,12 +2,12 @@ import "@fontsource/ibm-plex-sans/latin-400.css";
 import "@fontsource/ibm-plex-sans/latin-500.css";
 import "@fontsource/ibm-plex-sans/latin-600.css";
 import "./style.css";
-import { Marker, type Map as MLMap, type MapMouseEvent } from "maplibre-gl";
+import type { Map as MLMap, MapMouseEvent, Marker } from "maplibre-gl";
 import { API_BASE, REPO_URL } from "./config";
 import { loadLayer, loadMeta, loadPlaces, loadTile, pingApi, type ApiState } from "./data";
 import { cellCentre, cellIndex } from "./grid";
 import { AMOUNT_BINS, CHANCE_BINS, amountBin, chanceBin, paintSlot } from "./layers";
-import { createMap, rowsFor, showRain } from "./map";
+import { createMap, makeMarker, preloadMap, rowsFor, showRain } from "./map";
 import { nearestPlace, searchPlaces } from "./search";
 import { initSheet, setFirstSnap } from "./sheet";
 import { blockKey, blockParts, currentBlock, dataStatus, formatIst } from "./time";
@@ -230,15 +230,16 @@ async function setPlace(lat: number, lon: number, name: string): Promise<void> {
   renderAll();
 }
 
-function placeMarker(lat: number, lon: number): void {
+function placeMarker(lat: number, lon: number, animate = true): void {
   marker?.remove();
   if (!map) return;
   const el = document.createElement("div");
   el.className = "marker";
-  marker = new Marker({ element: el }).setLngLat([lon, lat]).addTo(map);
+  marker = makeMarker(map, el, lon, lat);
   const phone = innerWidth < 1024;
-  map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 6.5),
-    padding: { bottom: phone ? innerHeight * 0.4 : 0, top: phone ? 150 : 0, left: 0, right: 0 } });
+  const cam = { center: [lon, lat] as [number, number], zoom: Math.max(map.getZoom(), 6.5),
+    padding: { bottom: phone ? innerHeight * 0.4 : 0, top: phone ? 150 : 0, left: 0, right: 0 } };
+  if (animate && !matchMedia("(prefers-reduced-motion: reduce)").matches) map.flyTo(cam); else map.jumpTo(cam);
 }
 
 function locate(): void {
@@ -300,6 +301,18 @@ function renderAbout(): void {
 }
 
 // ---------- start ----------
+const PRELOAD = preloadMap(); // MapLibre code and the basemap style start downloading at once
+
+/** Place to open with: the URL's, else the last one seen on this device. */
+function initialPlace(): { lat: number; lon: number; name: string } | null {
+  if (view.lat !== undefined && view.lon !== undefined) return { lat: view.lat, lon: view.lon, name: view.name ?? "Selected point" };
+  try {
+    const last = JSON.parse(localStorage.getItem(LAST_PLACE) ?? "null");
+    if (last && Number.isFinite(last.lat) && Number.isFinite(last.lon)) return last;
+  } catch { /* storage unavailable */ }
+  return null;
+}
+
 async function start(): Promise<void> {
   initSheet($("sheet"), $("handle"));
   initSearch();
@@ -308,7 +321,9 @@ async function start(): Promise<void> {
   document.querySelectorAll<HTMLButtonElement>(".chip").forEach((b) => (b.onclick = () => { view.layer = b.dataset.layer as LayerId; renderAll(); }));
   void pingApi().then((s) => { apiState = s; if ($<HTMLDialogElement>("about").open) renderAbout(); });
 
-  const mapReady = createMap("map").catch(() => null); // the answer never waits for the map
+  const first = initialPlace();
+  // the answer never waits for the map; the map opens directly at the place (one set of tiles, no fly-in, D62)
+  const mapReady = createMap("map", PRELOAD, first ? [first.lon, first.lat] : [80, 22], first ? 6.5 : 3.6).catch(() => null);
   meta = await loadMeta();
   kNow = currentBlock(meta, new Date());
   const fromUrl = view.block ? meta.blocks.findIndex((b) => blockKey(b) === view.block) : -1;
@@ -321,13 +336,10 @@ async function start(): Promise<void> {
     // inspection handle for checks like the disputed-label audit (D61); only with ?debug in the opening URL
     if (DEBUG) (window as unknown as { rtMap: MLMap }).rtMap = mp;
     map.on("click", (e: MapMouseEvent) => void setPlace(e.lngLat.lat, e.lngLat.lng, "Selected point"));
-    if (place) placeMarker(place.lat, place.lon);
+    if (place) placeMarker(place.lat, place.lon, false);
     void renderMap().catch(() => undefined);
   });
-  if (view.lat !== undefined && view.lon !== undefined) return setPlace(view.lat, view.lon, view.name ?? "Selected point");
-  let last: { lat: number; lon: number; name: string } | null = null;
-  try { last = JSON.parse(localStorage.getItem(LAST_PLACE) ?? "null"); } catch { last = null; }
-  if (last && Number.isFinite(last.lat) && Number.isFinite(last.lon)) return setPlace(last.lat, last.lon, last.name);
+  if (first) return setPlace(first.lat, first.lon, first.name);
   renderAll();
   try {
     const perm = await navigator.permissions?.query({ name: "geolocation" as PermissionName });
