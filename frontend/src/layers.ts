@@ -39,6 +39,26 @@ export function amountBin(tenthsMm: number): number {
   return bin;
 }
 
+// Gap between the models, published as AIFS count - IFS count + 50 (D57). Differences under 20 points are the D15
+// "agree" range and get no colour; then three steps of 20 points, indigo = physics wetter, terracotta = AI wetter.
+export const GAP_BINS = [
+  { label: "Physics wetter by 60+ points", color: "#2A3463" },
+  { label: "40–59", color: "#6C7399" },
+  { label: "20–39", color: "#A9AECB" },
+  { label: "AI wetter by 20–39", color: "#E2BBA9" },
+  { label: "40–59", color: "#C9876A" },
+  { label: "60+ points", color: "#B0562F" },
+];
+/** Colour for a published gap value (0..100, 50 = equal), or null where the models agree or the value is missing. */
+export function gapColor(g: number): string | null {
+  if (g === U8_MISSING) return null;
+  const pts = (g - 50) * 2; // AIFS minus IFS, in points of 100
+  const a = Math.abs(pts);
+  if (a < 20) return null;
+  const step = a >= 60 ? 0 : a >= 40 ? 1 : 2; // strongest first
+  return pts < 0 ? GAP_BINS[step].color : GAP_BINS[5 - step].color;
+}
+
 /** Opacity from the settled bitmask (decided | agree << 1 | stable << 2): unsettled areas are washed out. */
 export function settledAlpha(bits: number): number {
   const n = (bits & 1) + ((bits >> 1) & 1) + ((bits >> 2) & 1);

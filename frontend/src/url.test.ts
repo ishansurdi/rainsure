@@ -8,8 +8,14 @@ describe("url state", () => {
   });
   it("defaults to the chance layer and drops invalid parts", () => {
     expect(parseState("?lat=abc&lon=80&layer=rainbow&b=tomorrow")).toEqual({
-      lat: undefined, lon: undefined, name: undefined, block: undefined, layer: "chance",
+      lat: undefined, lon: undefined, name: undefined, block: undefined, layer: "chance", models: undefined,
     });
+  });
+  it("keeps the physics/AI/gap choice only on the models layer", () => {
+    expect(parseState(stateToSearch({ lat: 9.93, lon: 76.27, layer: "agree", models: "aifs" })).models).toBe("aifs");
+    expect(stateToSearch({ layer: "agree", models: "gap" })).toBe("?layer=agree"); // gap is the default
+    expect(stateToSearch({ layer: "chance", models: "ifs" })).toBe("");
+    expect(parseState("?layer=agree&mv=banana").models).toBeUndefined();
   });
   it("needs both coordinates", () => {
     expect(parseState("?lat=13").lat).toBeUndefined();

@@ -1,6 +1,6 @@
 import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { amountBin, chanceBin, layerBytes, layerValues, paintSlot, settledAlpha } from "./layers";
+import { amountBin, chanceBin, gapColor, layerBytes, layerValues, paintSlot, settledAlpha } from "./layers";
 
 describe("chanceBin matches the sentence words (D50)", () => {
   it.each([[0, 0], [24, 0], [25, 1], [50, 1], [51, 2], [75, 2], [76, 3], [100, 3], [255, -1]])("%i -> %i", (c, b) => {
@@ -12,6 +12,19 @@ describe("amountBin uses IMD bounds on the 0.1 mm value", () => {
   it.each([[0, 0], [1, 1], [24, 1], [25, 2], [155, 2], [156, 3], [644, 3], [645, 4], [1155, 4], [1156, 5],
     [2044, 5], [2045, 6], [65535, -1]])("%i tenths -> %i", (t, b) => {
     expect(amountBin(t)).toBe(b);
+  });
+});
+
+describe("gapColor", () => {
+  it("leaves agreement uncoloured and steps by 20 points each way", () => {
+    expect(gapColor(50)).toBeNull(); // equal
+    expect(gapColor(59)).toBeNull(); // AI +9 of 50 = 18 points: agree
+    expect(gapColor(60)).toBe("#E2BBA9"); // AI +10 = 20 points
+    expect(gapColor(70)).toBe("#C9876A"); // 40 points
+    expect(gapColor(80)).toBe("#B0562F"); // 60 points
+    expect(gapColor(40)).toBe("#A9AECB"); // physics +20 points
+    expect(gapColor(20)).toBe("#2A3463"); // physics +60 points
+    expect(gapColor(255)).toBeNull();
   });
 });
 

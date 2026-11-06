@@ -28,6 +28,11 @@ a { color: var(--ink); }
 .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 .chip { flex: none; min-height: 44px; padding: 0 16px; border-radius: 22px; border: 1px solid var(--rule); background: var(--card); font-weight: 500; font-size: 14px; cursor: pointer; }
 .chip[aria-checked="true"] { background: var(--ink); color: var(--card); border-color: var(--ink); }
+.seg { display: inline-flex; justify-self: start; border: 1px solid var(--rule); border-radius: 22px; background: var(--card); padding: 2px; }
+.seg button { min-height: 40px; min-width: 64px; padding: 0 14px; border: 0; border-radius: 20px; background: none; font-weight: 500; font-size: 14px; cursor: pointer; }
+.seg button[aria-checked="true"] { background: var(--ink); color: var(--card); }
+.seg button[data-mv="ifs"][aria-checked="true"] { background: var(--phys); }
+.seg button[data-mv="aifs"][aria-checked="true"] { background: var(--ai); }
 .overlays { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; pointer-events: none; }
 .legend { padding: 8px 10px; font-size: 12px; max-width: 60%; pointer-events: auto; }
 .legend b { display: block; font-weight: 600; margin-bottom: 4px; }

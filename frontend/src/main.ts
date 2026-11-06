@@ -6,13 +6,13 @@ import type { Map as MLMap, MapMouseEvent, Marker } from "maplibre-gl";
 import { API_BASE, REPO_URL } from "./config";
 import { loadLayer, loadMeta, loadPlaces, loadTile, pingApi, type ApiState } from "./data";
 import { cellCentre, cellIndex } from "./grid";
-import { AMOUNT_BINS, CHANCE_BINS, amountBin, chanceBin, paintSlot } from "./layers";
+import { AMOUNT_BINS, CHANCE_BINS, GAP_BINS, amountBin, chanceBin, gapColor, paintSlot } from "./layers";
 import { createMap, makeMarker, preloadMap, rowsFor, showRain } from "./map";
 import { nearestPlace, searchPlaces } from "./search";
 import { initSheet, setFirstSnap } from "./sheet";
 import { blockKey, blockParts, currentBlock, dataStatus, formatIst } from "./time";
 import type { Cell, Meta, Tile } from "./types";
-import { parseState, stateToSearch, type LayerId, type ViewState } from "./url";
+import { parseState, stateToSearch, type LayerId, type ModelView, type ViewState } from "./url";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -57,6 +57,19 @@ function renderLegend(): void {
   if (dataStatus(meta, now()) === "expired") { el.innerHTML = "<b>No current forecast</b>"; return; }
   const swatch = (color: string, short: string, long: string) =>
     `<span class="row"><i style="background:${color}"></i>${short}<span class="long">&nbsp;${long}</span></span>`;
+  if (view.layer === "agree") {
+    const mv = view.models ?? "gap";
+    if (mv === "gap") {
+      el.innerHTML = `<b>Physics vs AI gap<span class="long"> · ${esc(meta.blocks[sel].label)}</span></b><div class="swatches">` +
+        GAP_BINS.map((b) => swatch(b.color, b.label, "")).join("") +
+        `</div><div class="note">Difference in chance of ≥ 2.5 mm, points of 100. Under 20 points: the models agree, no colour.</div>`;
+    } else {
+      el.innerHTML = `<b>${mv === "ifs" ? "Physics model (IFS)" : "AI model (AIFS)"} · chance of ≥ 2.5 mm<span class="long"> · ${esc(meta.blocks[sel].label)}</span></b><div class="swatches">` +
+        CHANCE_BINS.map((b) => swatch(b.color, b.label.split(" (")[1].replace(")", ""), b.label.split(" (")[0].toLowerCase())).join("") +
+        `</div><div class="note">Same scale for both models: share of each model's 50 forecasts. Switch to compare.</div>`;
+    }
+    return;
+  }
   if (view.layer === "chance") {
     el.innerHTML = `<b>Chance of ≥ 2.5 mm<span class="long"> · ${esc(meta.blocks[sel].label)}</span></b><div class="swatches">` +
       CHANCE_BINS.map((b) => swatch(b.color, b.label.split(" (")[1].replace(")", ""), b.label.split(" (")[0].toLowerCase())).join("") +
@@ -75,6 +88,20 @@ async function renderMap(): Promise<void> {
   if (!map) return;
   const g = meta.grid;
   if (dataStatus(meta, now()) === "expired") { showRain(map, g, null); return; }
+  if (view.layer === "agree") {
+    const mv = view.models ?? "gap";
+    if (mv === "gap") {
+      const v = await loadLayer(meta, "block_gap");
+      showRain(map, g, paintSlot(v, null, sel, g.n_lat, g.n_lon, rowsFor(g), gapColor));
+    } else {
+      const v = await loadLayer(meta, mv === "ifs" ? "block_ifs" : "block_aifs");
+      showRain(map, g, paintSlot(v, null, sel, g.n_lat, g.n_lon, rowsFor(g), (c) => {
+        const b = c === 255 ? -1 : chanceBin(c * 2); // count of 50 -> of 100, same bins as the pooled map
+        return b > 0 ? CHANCE_BINS[b - 1].color : null;
+      }));
+    }
+    return;
+  }
   if (view.layer === "chance") {
     const [v, s] = await Promise.all([loadLayer(meta, "block_pooled"), loadLayer(meta, "block_settled")]);
     showRain(map, g, paintSlot(v, s, sel, g.n_lat, g.n_lon, rowsFor(g), (c) => {
@@ -198,6 +225,9 @@ function renderAll(): void {
   renderSheet();
   void renderMap().catch(() => showRain(map!, meta.grid, null));
   document.querySelectorAll<HTMLButtonElement>(".chip").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.layer === view.layer)));
+  $("models-seg").hidden = view.layer !== "agree";
+  document.querySelectorAll<HTMLButtonElement>("#models-seg button").forEach((b) =>
+    b.setAttribute("aria-checked", String(b.dataset.mv === (view.models ?? "gap"))));
   syncUrl();
 }
 
@@ -346,6 +376,8 @@ async function start(): Promise<void> {
   $("locate").onclick = locate;
   $("about-link").onclick = (e) => { e.preventDefault(); renderAbout(); $<HTMLDialogElement>("about").showModal(); };
   document.querySelectorAll<HTMLButtonElement>(".chip").forEach((b) => (b.onclick = () => { view.layer = b.dataset.layer as LayerId; renderAll(); }));
+  document.querySelectorAll<HTMLButtonElement>("#models-seg button").forEach((b) =>
+    (b.onclick = () => { view.models = b.dataset.mv as ModelView; renderAll(); }));
   void pingApi().then((s) => { apiState = s; if ($<HTMLDialogElement>("about").open) renderAbout(); });
 
   const first = initialPlace();
