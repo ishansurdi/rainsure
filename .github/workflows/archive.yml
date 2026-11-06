@@ -176,3 +176,5 @@ jobs:
       - id: deployment
         if: steps.decide.outputs.skip != 'true'
         uses: actions/deploy-pages@v5
+        with:
+          timeout: 1200000 # ms; the default 10 min ran out on 2026-11-06 while Pages processed ~1,000 files
