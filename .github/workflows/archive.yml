@@ -9,6 +9,11 @@ on:
     # :23 avoids the top-of-hour load where GitHub delays/drops scheduled runs (GitHub docs).
     - cron: "23 * * * *"
   workflow_dispatch:
+    inputs:
+      trigger:
+        description: "cron = hourly outside trigger (skips unchanged site rebuilds like the schedule); manual = always rebuild"
+        type: string
+        default: manual
   push:
     branches: [main]
     paths:
@@ -126,7 +131,9 @@ jobs:
           curl -sf --max-time 30 https://ishansurdi.github.io/rainsure/data/latest.json -o live.json || echo '{}' > live.json
           live=$(python -c "import json; m=json.load(open('live.json')); print(m.get('run_id'), m.get('previous_run_id') or '-', m.get('source_sha'))")
           skip=false
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "$live" = "$run $prev $sha" ]; then skip=true; fi
+          timed=false  # GitHub's schedule or the hourly outside trigger (cron-job.org dispatch with trigger=cron, D64)
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event.inputs.trigger }}" = "cron" ]; then timed=true; fi
+          if [ "$timed" = true ] && [ "$live" = "$run $prev $sha" ]; then skip=true; fi
           echo "run=$run" >> "$GITHUB_OUTPUT"; echo "prev=$prev" >> "$GITHUB_OUTPUT"
           echo "sha=$sha" >> "$GITHUB_OUTPUT"; echo "skip=$skip" >> "$GITHUB_OUTPUT"
           if [ "$skip" = true ]; then
