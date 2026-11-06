@@ -34,9 +34,9 @@ def rain_category(mm: float) -> str | None:
 
 
 def block_sentence(label: str, n_pooled: int) -> str:
-    """'Rain very likely Thu afternoon · 11:30–17:30 IST: 54 of 100 forecasts give ≥ 2.5 mm.'"""
+    """'Rain very likely Thu afternoon · 11:30–17:30 IST: 54 of 100 forecasts show at least 2.5 mm.' (D65)"""
     return (f"Rain {prob_word(n_pooled, POOLED)} {label}: {n_pooled} of {POOLED} forecasts "
-            f"give ≥ {config.EVENT_MM:g} mm.")
+            f"show at least {config.EVENT_MM:g} mm.")
 
 
 MODEL_NAMES = ("physics", "AI")  # index = Disagreement.drier code: 0 IFS, 1 AIFS
@@ -107,7 +107,7 @@ def day_sentence(label: str, agree: bool, p25_mm: float, p50_mm: float, p75_mm: 
         return (f"Day total {label}: models disagree: physics {_median_text(median_ifs_mm)}, "
                 f"AI {_median_text(median_aifs_mm)}.")
     if rain_category(p50_mm) is None:
-        wet = f"; {n_event} of {POOLED} give ≥ {config.EVENT_MM:g} mm" if n_event else ""
+        wet = f"; {n_event} of {POOLED} show at least {config.EVENT_MM:g} mm" if n_event else ""
         return f"Day total {label}: under 0.1 mm in {n_zero} of {POOLED} forecasts{wet}."
     middle = "" if _mm(p25_mm) == _mm(p75_mm) else f", middle half {_mm(p25_mm)}–{_mm(p75_mm)} mm"
     return f"Day total {label}: {_median_text(p50_mm)}{middle}."
@@ -209,16 +209,14 @@ def summary_48h(window: list[BlockCounts], day_counts: dict[date, int]) -> str:
         lead = "Then on" if timed and first_wet > window[0].block.start_utc else "On"
         timed.append((spells[0][0].block.start_utc,
                       f"{lead} and off until {time_label(spells[-1][-1].block.end_utc)}: rain "
-                      f"{_word_range(all_wet)} in {len(all_wet)} of {len(window)} blocks."))
+                      f"{_word_range(all_wet)} in {len(all_wet)} of the next {len(window)} six-hour periods."))
     for first, last, counts in spread:
-        if len(counts) == 1:
-            n_text = f"{counts[0]} of {POOLED} forecasts give"
-        else:
-            rng = f"{min(counts)}–{max(counts)}" if min(counts) != max(counts) else f"{counts[0]}"
-            n_text = f"{rng} of {POOLED} forecasts per day give"
+        # plain-language pass (D65): say what "spread" means instead of "no single 6-hour block likely wet"
+        rng = f"{min(counts)}–{max(counts)}" if min(counts) != max(counts) else f"{counts[0]}"
+        per = "over the whole day" if len(counts) == 1 else "a day"
         timed.append((first.block.start_utc,
-                      f"Rain {_count_word_range(counts)} spread over {short_span(first.block, last.block)}: {n_text} "
-                      f"≥ {config.EVENT_MM:g} mm, no single 6-hour block likely wet."))
+                      f"Rain {_count_word_range(counts)}, spread thinly over {short_span(first.block, last.block)}: "
+                      f"{rng} of {POOLED} forecasts show at least {config.EVENT_MM:g} mm {per}."))
     parts = [s for _, s in sorted(timed, key=lambda x: x[0])]
     limit = config.SUMMARY_MAX_CHARS
     kept: list[str] = []

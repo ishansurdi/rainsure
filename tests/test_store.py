@@ -75,7 +75,7 @@ class TestProductsAndTile(unittest.TestCase):
         # "models disagree" appears once, in the explanation; AI has no rain before/after or nearby and the day
         # disagrees too (30 vs 0 of 50) -> "other"
         self.assertEqual(s[cell["bt"][1][0]],
-                         "Rain likely Thu afternoon · 11:30–17:30 IST: 30 of 100 forecasts give ≥ 2.5 mm.")
+                         "Rain likely Thu afternoon · 11:30–17:30 IST: 30 of 100 forecasts show at least 2.5 mm.")
         self.assertEqual(s[cell["bt"][1][1]], "Forecast unsettled: not clear-cut (30 of 100), "
                                               "no earlier forecast to compare.")
         self.assertEqual(s[cell["bt"][1][2]], "Physics and AI models disagree: physics 30 of 50, AI 0 of 50. "

@@ -136,7 +136,7 @@ function timelineHtml(cell: Cell): string {
     html += `<button class="tb${dayStart ? " daystart" : ""}" data-k="${k}" aria-pressed="${k === sel}">
       <span class="now">${k === kNow ? "now" : differ ? '<i class="mark" aria-hidden="true"></i>' : ""}</span><span class="bar${n >= 25 ? " wet" : ""}" style="height:${h}px"></span>
       <span class="n">${n}</span><span class="d">${p.day} ${p.name.slice(0, 3)}</span><span class="t">${p.start}</span>
-      <span class="sr">: ${esc(meta.blocks[k].label)}, ${n} of 100 forecasts give at least 2.5 mm${differ ? "; physics and AI models disagree" : ""}</span></button>`;
+      <span class="sr">: ${esc(meta.blocks[k].label)}, ${n} of 100 forecasts show at least 2.5 mm${differ ? "; physics and AI models disagree" : ""}</span></button>`;
   }
   return `<div class="timeline" id="timeline" aria-label="Chance of at least 2.5 mm per 6-hour block, of 100 forecasts">${html}</div>`;
 }
@@ -337,7 +337,7 @@ function renderAbout(): void {
     <p>Rain chances for India from 100 ECMWF forecasts: 50 from the IFS physics ensemble and 50 from the AIFS AI ensemble.
     The app answers first and shows how far to trust it: how many forecasts agree, whether physics and AI agree, and how much it changed since the previous forecast.</p>
     <h3>How to read it</h3>
-    <p><b>100 forecasts.</b> ECMWF runs its forecast many times with slightly different starting conditions. We use 50 runs of the physics model (IFS) and 50 of the AI model (AIFS). “54 of 100 forecasts give ≥ 2.5 mm” means 54 of those runs bring at least 2.5 mm in that 6-hour block.</p>
+    <p><b>100 forecasts.</b> ECMWF runs its forecast many times with slightly different starting conditions. We use 50 runs of the physics model (IFS) and 50 of the AI model (AIFS). “54 of 100 forecasts show at least 2.5 mm” means 54 of those runs bring at least 2.5 mm in that 6-hour block.</p>
     <p><b>Settled or unsettled.</b> This is about trust, not about rain: a forecast is settled when it is clear-cut (under 20 or over 80 of 100), the two models agree, and it changed little since the previous forecast.</p>
     <p><b>Physics and AI.</b> Where the two models differ by 20 points or more, we say how, from the numbers only: one model’s rain is lighter, earlier or later, or a little further away. Which model is drier varies; in our data the physics model is often the lighter one. As background only, one ECMWF case study (Storm Hans, Alps, April 2025) found: “The underprediction of AIFS ENS seems more pronounced than in the case of IFS ENS.” and “Nevertheless, both AIFS ENS and IFS ENS gave early indication of the possibility of an extreme event.” That is one storm, not a rule. <a href="https://www.ecmwf.int/sites/default/files/elibrary/102025/81687-aifs-ens-becomes-operational.pdf" target="_blank" rel="noopener">ECMWF Newsletter 185, Lang et al., doi:10.21957/hg1z-pe65</a>.</p>
     <p><b>Days and times.</b> Days run 05:30–05:30 IST (00–00 UTC) because the AI model only gives 6-hourly steps, so IMD’s 08:30 IST day can’t be built from it. All times are IST.</p>

@@ -15,7 +15,7 @@ much the forecast changed since the previous run.
 ## How to read it
 
 - **100 forecasts.** ECMWF runs each forecast many times from slightly different starting conditions. We use 50 runs
-  of the physics model **IFS** and 50 of the AI model **AIFS**. "54 of 100 forecasts give ≥ 2.5 mm" means 54 runs
+  of the physics model **IFS** and 50 of the AI model **AIFS**. "54 of 100 forecasts show at least 2.5 mm" means 54 runs
   bring at least 2.5 mm (IMD's "rainy day" amount) in that 6-hour block.
 - **Rain unlikely / likely / very likely / most likely** are IMD's probability words: under 25, 25–50, 51–75 and over
   75 of 100 forecasts (D50).

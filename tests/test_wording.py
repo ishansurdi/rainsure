@@ -50,7 +50,7 @@ class TestSentences(unittest.TestCase):
     def test_block_sentence(self) -> None:
         label = "Thu afternoon · 11:30–17:30 IST"
         self.assertEqual(block_sentence(label, 54),
-                         "Rain very likely Thu afternoon · 11:30–17:30 IST: 54 of 100 forecasts give ≥ 2.5 mm.")
+                         "Rain very likely Thu afternoon · 11:30–17:30 IST: 54 of 100 forecasts show at least 2.5 mm.")
 
     def test_disagreement_explained_once_by_kind(self) -> None:
         lead = "Physics and AI models disagree: physics 30 of 50, AI 5 of 50. "
@@ -89,7 +89,7 @@ class TestSentences(unittest.TestCase):
                          "Day total Thu · 05:30 Thu – 05:30 Fri IST: under 0.1 mm in 100 of 100 forecasts.")
         self.assertEqual(day_sentence(label, True, 0.0, 0.02, 1.3, 0.0, 0.1, 58, 12),
                          "Day total Thu · 05:30 Thu – 05:30 Fri IST: under 0.1 mm in 58 of 100 forecasts; "
-                         "12 of 100 give ≥ 2.5 mm.")
+                         "12 of 100 show at least 2.5 mm.")
         self.assertEqual(day_sentence(label, False, 1.2, 1.8, 2.9, 2.7, 0.0, 10, 33),
                          "Day total Thu · 05:30 Thu – 05:30 Fri IST: models disagree: physics median 2.7 mm "
                          "(light rain), AI median 0.0 mm.")
@@ -118,32 +118,32 @@ class TestSummary48h(unittest.TestCase):
         w = _window([(3, 3), (0, 11), (2, 0), (18, 10), (10, 12), (1, 28), (4, 8), (14, 16)])
         self.assertEqual(summary_48h(w, NO_SPREAD),
                          "Rain unlikely until Thu night. Then on and off until Sat 05:30 IST: rain likely in "
-                         "3 of 8 blocks.")  # no disagreement note in the summary any more (D60)
+                         "3 of the next 8 six-hour periods.")  # no disagreement note in the summary any more (D60)
 
     def test_wet_from_the_start(self) -> None:
         w = _window([(40, 40), (0, 0), (20, 20), (0, 0), (20, 20), (0, 0), (0, 0), (0, 0)])
         self.assertEqual(summary_48h(w, NO_SPREAD),
-                         "On and off until Fri 11:30 IST: rain up to most likely in 3 of 8 blocks.")
+                         "On and off until Fri 11:30 IST: rain up to most likely in 3 of the next 8 six-hour periods.")
 
     def test_spread_day_without_wet_block(self) -> None:
         # Hyderabad-like: every block 24 of 100 or less, but 33 of 100 reach 2.5 mm over Thu
         w = _window([(4, 0), (8, 0), (4, 0), (0, 0), (0, 0), (4, 0), (3, 0), (0, 0)])
         self.assertEqual(summary_48h(w, {THU: 33, FRI: 7}),
-                         "Rain likely spread over Thu 05:30 – Fri 05:30 IST: 33 of 100 forecasts give ≥ 2.5 mm, "
-                         "no single 6-hour block likely wet.")
+                         "Rain likely, spread thinly over Thu 05:30 – Fri 05:30 IST: 33 of 100 forecasts show at least "
+                         "2.5 mm over the whole day.")
 
     def test_spread_day_before_wet_spell_in_time_order(self) -> None:
         w = _window([(4, 0), (8, 0), (4, 0), (0, 0), (0, 0), (20, 20), (3, 0), (0, 0)])
         self.assertEqual(summary_48h(w, {THU: 30, FRI: 45}),
-                         "Rain likely spread over Thu 05:30 – Fri 05:30 IST: 30 of 100 forecasts give ≥ 2.5 mm, "
-                         "no single 6-hour block likely wet. Rain likely Fri 11:30–17:30 IST.")
+                         "Rain likely, spread thinly over Thu 05:30 – Fri 05:30 IST: 30 of 100 forecasts show at least "
+                         "2.5 mm over the whole day. Rain likely Fri 11:30–17:30 IST.")
 
     def test_consecutive_spread_days_merge(self) -> None:
         # Chennai-like: no block >= 25 of 100, but both days are wet in total -> one sentence, count range
         w = _window([(6, 6)] * 8)
         self.assertEqual(summary_48h(w, {THU: 30, FRI: 79}),
-                         "Rain up to most likely spread over Thu 05:30 – Sat 05:30 IST: 30–79 of 100 forecasts per "
-                         "day give ≥ 2.5 mm, no single 6-hour block likely wet.")
+                         "Rain up to most likely, spread thinly over Thu 05:30 – Sat 05:30 IST: 30–79 of 100 forecasts "
+                         "show at least 2.5 mm a day.")
 
     def test_limit_keeps_nearest_and_points_to_timeline(self) -> None:
         # from Thu afternoon: wet Thu afternoon, spread Fri (60 of 100 over the day), wet Sat morning.
@@ -152,7 +152,7 @@ class TestSummary48h(unittest.TestCase):
         w = [BlockCounts(b, i, a) for b, (i, a) in zip(blocks, counts)]
         days = {THU: 40, FRI: 60, date(2026, 11, 7): 40}
         full = summary_48h(w, days)  # everything fits in 200
-        self.assertTrue(full.startswith("Rain likely Thu 11:30–17:30 IST. Rain very likely spread over Fri"))
+        self.assertTrue(full.startswith("Rain likely Thu 11:30–17:30 IST. Rain very likely, spread thinly over Fri"))
         self.assertTrue(full.endswith("Rain likely again Sat 05:30–11:30 IST."))
         with patch.object(config, "SUMMARY_MAX_CHARS", 80):
             self.assertEqual(summary_48h(w, days), "Rain likely Thu 11:30–17:30 IST. More rain later: see the timeline.")

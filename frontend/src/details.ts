@@ -19,10 +19,10 @@ function dotGrid(cell: Cell, k: number): string {
   const d = decodeDots(cell.b[k][3]);
   const row = (from: number, cls: string) =>
     Array.from({ length: 25 }, (_, n) => `<i class="dot ${cls}${d[from + n] ? " wet" : ""}"></i>`).join("");
-  return `<figure class="dots" aria-label="Physics ${cell.b[k][0]} of 50 and AI ${cell.b[k][1]} of 50 forecasts give at least 2.5 mm">
+  return `<figure class="dots" aria-label="Physics ${cell.b[k][0]} of 50 and AI ${cell.b[k][1]} of 50 forecasts show at least 2.5 mm">
     <div class="dots-model"><span class="lbl phys">Physics</span><div class="dots-rows"><div>${row(0, "phys")}</div><div>${row(25, "phys")}</div></div></div>
     <div class="dots-model"><span class="lbl ai">AI</span><div class="dots-rows"><div>${row(50, "ai")}</div><div>${row(75, "ai")}</div></div></div>
-    <figcaption>Physics ${cell.b[k][0]} of 50, AI ${cell.b[k][1]} of 50 give ≥ 2.5 mm. One dot = one forecast.</figcaption></figure>`;
+    <figcaption>Physics ${cell.b[k][0]} of 50, AI ${cell.b[k][1]} of 50 show at least 2.5 mm. One dot = one forecast.</figcaption></figure>`;
 }
 
 function meteogram(m: Meta, cell: Cell, sel: number, kNow: number): string {
