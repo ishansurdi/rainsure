@@ -1,7 +1,6 @@
 // MapLibre map: OpenFreeMap basemap without its borders, our India-POV borders, and the rain image on top.
 // MapLibre is loaded with a dynamic import so the answer sheet never waits for it (D62).
 import type { ImageSource, Map as MLMap, Marker, StyleSpecification } from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
 // MapLibre 6 looks for its worker next to its own module file, which bundlers move; ship the worker as an asset.
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { indiaView } from "./basemap";
@@ -17,7 +16,8 @@ let lib: typeof import("maplibre-gl") | null = null;
 export function preloadMap(after: Promise<unknown>): { lib: Promise<typeof import("maplibre-gl")>; style: Promise<StyleSpecification> } {
   const go = after.catch(() => undefined);
   return {
-    lib: go.then(() => import("maplibre-gl")).then((m) => (lib = m)),
+    // MapLibre's stylesheet comes with it, so it is not render-blocking for the answer (PageSpeed, D62)
+    lib: go.then(() => Promise.all([import("maplibre-gl"), import("maplibre-gl/dist/maplibre-gl.css")])).then(([m]) => (lib = m)),
     style: go.then(() => fetch(STYLE_URL)).then((r) => r.json() as Promise<StyleSpecification>),
   };
 }

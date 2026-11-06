@@ -112,6 +112,10 @@ a { color: var(--ink); }
 .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: 6px; background: var(--ash); }
 .status-dot.up { background: var(--moss); } .status-dot.waking { background: var(--ochre); }
 
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.tb { position: relative; }
+/* MapLibre's attribution toggle is 24 px by default; WCAG 2.2 target size wants room around it (Lighthouse) */
+.maplibregl-ctrl.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button { width: 32px; height: 32px; }
 .marker { width: 16px; height: 16px; border-radius: 8px; background: var(--gold); border: 2px solid var(--ink); }
 
 /* Desktop: map left, panel right (milestone 4 refines this). */

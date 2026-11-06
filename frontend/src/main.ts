@@ -102,10 +102,11 @@ function timelineHtml(cell: Cell): string {
     lastDay = meta.blocks[k].app_day;
     const differ = (cell.bt[k][2] ?? -1) >= 0;
     const h = n === 0 ? 2 : 3 + n * 0.27; // visible from 1 forecast, still ordered: 8 -> 5.2 px, 18 -> 7.9 px, 100 -> 30 px
-    html += `<button class="tb${dayStart ? " daystart" : ""}" data-k="${k}" aria-pressed="${k === sel}"
-      aria-label="${esc(meta.blocks[k].label)}: ${n} of 100 forecasts give at least 2.5 mm${differ ? "; physics and AI models disagree" : ""}">
-      <span class="now">${k === kNow ? "now" : differ ? '<i class="mark" title="Physics and AI models disagree"></i>' : ""}</span><span class="bar${n >= 25 ? " wet" : ""}" style="height:${h}px"></span>
-      <span class="n">${n}</span><span class="d">${p.day} ${p.name.slice(0, 3)}</span><span class="t">${p.start}</span></button>`;
+    // accessible name = visible text + a hidden full description, so voice control ("tap 31") still matches
+    html += `<button class="tb${dayStart ? " daystart" : ""}" data-k="${k}" aria-pressed="${k === sel}">
+      <span class="now">${k === kNow ? "now" : differ ? '<i class="mark" aria-hidden="true"></i>' : ""}</span><span class="bar${n >= 25 ? " wet" : ""}" style="height:${h}px"></span>
+      <span class="n">${n}</span><span class="d">${p.day} ${p.name.slice(0, 3)}</span><span class="t">${p.start}</span>
+      <span class="sr">: ${esc(meta.blocks[k].label)}, ${n} of 100 forecasts give at least 2.5 mm${differ ? "; physics and AI models disagree" : ""}</span></button>`;
   }
   return `<div class="timeline" id="timeline" aria-label="Chance of at least 2.5 mm per 6-hour block, of 100 forecasts">${html}</div>`;
 }
