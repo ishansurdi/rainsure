@@ -129,6 +129,7 @@ function renderSheet(): void {
     body.innerHTML = `${head}${coords}<p class="summary">Forecast out of date. The newest forecast we have is from the run of ${formatIst(meta.run_time_utc)}, more than 72 hours ago. We don’t show old numbers as a forecast.</p>`;
     return;
   }
+  if (!performance.getEntriesByName("answer-visible").length) performance.mark("answer-visible"); // speed check, D62
   const settled = S[cell.bt[sel][1]];
   const models = (cell.bt[sel][2] ?? -1) >= 0 ? `<p class="models">${esc(S[cell.bt[sel][2]])}</p>` : "";
   body.innerHTML = `${head}${coords}
@@ -300,6 +301,7 @@ async function start(): Promise<void> {
   void mapReady.then((mp) => {
     if (!mp) return;
     map = mp;
+    map.once("idle", () => performance.mark("map-visible")); // first frame with basemap tiles drawn (speed check, D62)
     // inspection handle for checks like the disputed-label audit (D61); only with ?debug in the URL
     if (new URLSearchParams(location.search).has("debug")) (window as unknown as { rtMap: MLMap }).rtMap = mp;
     map.on("click", (e: MapMouseEvent) => void setPlace(e.lngLat.lat, e.lngLat.lng, "Selected point"));
