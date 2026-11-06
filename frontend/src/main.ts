@@ -8,7 +8,7 @@ import { loadLayer, loadMeta, loadPlaces, loadTile, pingApi, type ApiState } fro
 import { cellCentre, cellIndex } from "./grid";
 import { AMOUNT_BINS, CHANCE_BINS, amountBin, chanceBin, paintSlot } from "./layers";
 import { createMap, rowsFor, showRain } from "./map";
-import { searchPlaces } from "./search";
+import { nearestPlace, searchPlaces } from "./search";
 import { initSheet } from "./sheet";
 import { blockKey, blockParts, currentBlock, dataStatus, formatIst } from "./time";
 import type { Cell, Meta, Tile } from "./types";
@@ -88,9 +88,11 @@ function timelineHtml(cell: Cell): string {
     const n = cell.b[k][0] + cell.b[k][1];
     const dayStart = meta.blocks[k].app_day !== lastDay && k !== start;
     lastDay = meta.blocks[k].app_day;
+    const differ = (cell.bt[k][2] ?? -1) >= 0;
+    const h = n === 0 ? 2 : Math.max(6, n * 0.34); // any rain at all stays visible
     html += `<button class="tb${dayStart ? " daystart" : ""}" data-k="${k}" aria-pressed="${k === sel}"
-      aria-label="${esc(meta.blocks[k].label)}: ${n} of 100 forecasts give at least 2.5 mm">
-      <span class="now">${k === kNow ? "now" : ""}</span><span class="bar${n >= 25 ? " wet" : ""}" style="height:${Math.max(2, n * 0.34)}px"></span>
+      aria-label="${esc(meta.blocks[k].label)}: ${n} of 100 forecasts give at least 2.5 mm${differ ? "; physics and AI models disagree" : ""}">
+      <span class="now">${k === kNow ? "now" : differ ? '<i class="mark" title="Physics and AI models disagree"></i>' : ""}</span><span class="bar${n >= 25 ? " wet" : ""}" style="height:${h}px"></span>
       <span class="n">${n}</span><span class="d">${p.day} ${p.name.slice(0, 3)}</span><span class="t">${p.start}</span></button>`;
   }
   return `<div class="timeline" id="timeline" aria-label="Chance of at least 2.5 mm per 6-hour block, of 100 forecasts">${html}</div>`;
@@ -122,21 +124,32 @@ function renderSheet(): void {
   const { tile, cell, j, i } = cellData;
   const c = cellCentre(meta.grid, j, i);
   const S = tile.strings;
-  const sub = `<p class="sub">Next 48 hours · grid point ${c.lat.toFixed(2)} N, ${c.lon.toFixed(2)} E</p>`;
+  const coords = `<p class="coords">${place.lat.toFixed(2)} N, ${place.lon.toFixed(2)} E · forecast grid point ${c.lat.toFixed(2)} N, ${c.lon.toFixed(2)} E · next 48 hours</p>`;
   if (status === "expired" || kNow === null) {
-    body.innerHTML = `${head}<p class="summary">Forecast out of date. The newest forecast we have was issued ${formatIst(meta.processed_at_utc)}, more than 72 hours ago. We don’t show old numbers as a forecast.</p>`;
+    body.innerHTML = `${head}${coords}<p class="summary">Forecast out of date. The newest forecast we have is from the run of ${formatIst(meta.run_time_utc)}, more than 72 hours ago. We don’t show old numbers as a forecast.</p>`;
     return;
   }
   const settled = S[cell.bt[sel][1]];
-  body.innerHTML = `${head}${sub}
+  const models = (cell.bt[sel][2] ?? -1) >= 0 ? `<p class="models">${esc(S[cell.bt[sel][2]])}</p>` : "";
+  body.innerHTML = `${head}${coords}
     <p class="summary">${esc(S[cell.s[kNow]])}</p>
     <p class="block-answer">${esc(S[cell.bt[sel][0]])}</p>
     <p class="pill ${settled.startsWith("Forecast settled.") ? "settled" : "unsettled"}">${esc(settled)}</p>
+    ${models}
     ${timelineHtml(cell)}
-    <p class="note">Each 6-hour block counts how many of 100 forecasts give at least 2.5 mm. Days run 05:30–05:30 IST.</p>`;
+    <div id="details"><div class="skeleton"><span></span><span></span></div></div>`;
   $("timeline").querySelectorAll<HTMLButtonElement>(".tb").forEach((b) => (b.onclick = () => selectBlock(Number(b.dataset.k))));
   const tl = $("timeline"), pressed = tl.querySelector<HTMLElement>('[aria-pressed="true"]');
   if (pressed) tl.scrollLeft = pressed.offsetLeft - tl.offsetLeft - tl.clientWidth / 2 + pressed.clientWidth / 2; // sideways only
+  const want = { tile, cell, sel, kNow };
+  void import("./details").then(({ renderDetails }) => {
+    if (cellData?.cell !== want.cell || sel !== want.sel) return; // something newer was rendered
+    const el = document.getElementById("details");
+    if (el) el.innerHTML = renderDetails(meta, want.tile, want.cell, want.sel, want.kNow);
+  }).catch(() => {
+    const el = document.getElementById("details");
+    if (el) el.innerHTML = `<p class="note">Details didn’t load. Check the connection.</p>`;
+  });
 }
 
 function syncUrl(): void {
@@ -158,11 +171,31 @@ function selectBlock(k: number): void {
   renderAll();
 }
 
+const UNNAMED = new Set(["Selected point", "Your location"]);
+
+/** Name a tapped or located point after the nearest place in our list (GeoNames), else its coordinates. */
+async function nameFor(lat: number, lon: number): Promise<string> {
+  try {
+    const hit = nearestPlace(await loadPlaces(), lat, lon);
+    if (hit) return `${hit.km < 5 ? "" : "Near "}${hit.place[0]}, ${hit.place[1]}`;
+  } catch { /* place list unavailable: fall back to coordinates */ }
+  return `${lat.toFixed(2)} N, ${lon.toFixed(2)} E`;
+}
+
 async function setPlace(lat: number, lon: number, name: string): Promise<void> {
   place = { lat, lon, name };
   cellData = null;
   placeError = null;
   placeMarker(lat, lon);
+  if (UNNAMED.has(name)) {
+    void nameFor(lat, lon).then((n) => {
+      if (place?.lat === lat && place.lon === lon) {
+        place.name = n;
+        try { localStorage.setItem(LAST_PLACE, JSON.stringify(place)); } catch { /* fine */ }
+        renderAll();
+      }
+    });
+  }
   try { localStorage.setItem(LAST_PLACE, JSON.stringify(place)); } catch { /* storage unavailable: fine */ }
   const ji = cellIndex(meta.grid, lat, lon);
   if (!ji) { placeError = "outside"; renderAll(); return; }
@@ -225,6 +258,11 @@ function renderAbout(): void {
   $("about").innerHTML = `<h2>About rain-trust</h2>
     <p>Rain chances for India from 100 ECMWF forecasts: 50 from the IFS physics ensemble and 50 from the AIFS AI ensemble.
     The app answers first and shows how far to trust it: how many forecasts agree, whether physics and AI agree, and how much it changed since the previous forecast.</p>
+    <h3>How to read it</h3>
+    <p><b>100 forecasts.</b> ECMWF runs its forecast many times with slightly different starting conditions. We use 50 runs of the physics model (IFS) and 50 of the AI model (AIFS). “54 of 100 forecasts give ≥ 2.5 mm” means 54 of those runs bring at least 2.5 mm in that 6-hour block.</p>
+    <p><b>Settled or unsettled.</b> This is about trust, not about rain: a forecast is settled when it is clear-cut (under 20 or over 80 of 100), the two models agree, and it changed little since the previous forecast.</p>
+    <p><b>Physics and AI.</b> Where the two models differ by 20 points or more, we say how, from the numbers only: one model’s rain is lighter, earlier or later, or a little further away. Which model is drier varies; in our data the physics model is often the lighter one. As background only, one ECMWF case study (Storm Hans, Alps, April 2025) found: “The underprediction of AIFS ENS seems more pronounced than in the case of IFS ENS.” and “Nevertheless, both AIFS ENS and IFS ENS gave early indication of the possibility of an extreme event.” That is one storm, not a rule. <a href="https://www.ecmwf.int/sites/default/files/elibrary/102025/81687-aifs-ens-becomes-operational.pdf" target="_blank" rel="noopener">ECMWF Newsletter 185, Lang et al., doi:10.21957/hg1z-pe65</a>.</p>
+    <p><b>Days and times.</b> Days run 05:30–05:30 IST (00–00 UTC) because the AI model only gives 6-hourly steps, so IMD’s 08:30 IST day can’t be built from it. All times are IST.</p>
     <h3>Backend</h3>
     <p><span class="status-dot ${dot}"></span>API: ${word}. <a href="${API_BASE}" target="_blank" rel="noopener">${API_BASE}</a> ·
     <a href="${API_BASE}/docs" target="_blank" rel="noopener">API docs (/docs)</a> · <a href="${REPO_URL}" target="_blank" rel="noopener">Source on GitHub</a></p>

@@ -69,6 +69,31 @@ a { color: var(--ink); }
 .tb .d, .tb .t { font-size: 10px; color: var(--ash); }
 .tb.daystart { border-left: 1px solid var(--rule); border-radius: 0 8px 8px 0; }
 
+.coords { font-size: 11px; color: var(--ash); margin: -8px 0 0; }
+.models { margin: 0; padding: 10px 12px; border: 1.5px dashed var(--plum); border-radius: 8px; font-size: 14px; line-height: 1.45; color: var(--ink); }
+.models b { color: var(--plum); }
+.tb .mark { width: 6px; height: 6px; border-radius: 3px; background: var(--plum); justify-self: end; margin-right: 4px; }
+.h3 { font-size: 15px; font-weight: 600; margin: 4px 0 -4px; }
+.details { display: grid; gap: 12px; padding-top: 4px; border-top: 1px solid var(--rule); }
+.changing { font-size: 14px; margin: 0; }
+.dots { margin: 0; display: grid; gap: 6px; }
+.dots-model { display: grid; grid-template-columns: 54px 1fr; align-items: center; gap: 6px; }
+.dots-rows { display: grid; gap: 3px; }
+.dots-rows > div { display: grid; grid-template-columns: repeat(25, 1fr); gap: 3px; max-width: 300px; }
+.dot { aspect-ratio: 1; border-radius: 50%; border: 1.5px solid; }
+.dot.phys { border-color: var(--phys); } .dot.ai { border-color: var(--ai); }
+.dot.phys.wet { background: var(--phys); } .dot.ai.wet { background: var(--ai); }
+.lbl { font-size: 12px; font-weight: 600; } .lbl.phys { color: var(--phys); } .lbl.ai { color: var(--ai); }
+.dots figcaption, .meteo figcaption { font-size: 12px; color: var(--ash); }
+.meteo { margin: 0; } .meteo svg { width: 100%; max-width: 520px; height: auto; display: block; }
+.meteo .band { fill: var(--r2); opacity: 0.55; } .meteo .phys { stroke: var(--phys); stroke-width: 2.5; }
+.meteo .ai { stroke: var(--ai); stroke-width: 2.5; } .meteo .thr { stroke: var(--ink); stroke-dasharray: 3 3; opacity: 0.6; }
+.meteo .now { stroke: var(--gold); stroke-width: 2; } .meteo .sel { fill: var(--gold); opacity: 0.15; }
+.meteo .tick { font: 10px var(--font); fill: var(--ash); } .meteo .tick.b { font-weight: 600; fill: var(--ink); }
+.key { display: inline-block; width: 12px; height: 8px; margin: 0 3px 0 8px; vertical-align: middle; }
+.key.band { background: var(--r2); opacity: 0.55; margin-left: 0; } .key.phys { background: var(--phys); height: 3px; } .key.ai { background: var(--ai); height: 3px; }
+.day { font-size: 14px; line-height: 1.4; margin: 0; }
+
 .foot { padding: 8px 16px 12px; font-size: 12px; border-top: 1px solid var(--rule); flex: none; }
 .foot a { color: var(--ash); }
 .skeleton { display: grid; gap: 10px; }

@@ -23,5 +23,6 @@ export interface Meta {
 
 // cell.b[k] = [n_ifs, n_aifs, n_prev|-1, dots, p10, p90, median_ifs, median_aifs]
 export type BlockRow = [number, number, number, string, number, number, number, number];
-export interface Cell { b: BlockRow[]; bt: [number, number][]; d: number[][]; dt: [number, number][]; s: number[] }
+// cell.bt[k] = [answer, settled, models|-1] string indices (models: how physics and AI disagree, D60)
+export interface Cell { b: BlockRow[]; bt: number[][]; d: number[][]; dt: [number, number][]; s: number[] }
 export interface Tile { run: string; tile: [number, number]; strings: string[]; cells: Record<string, Cell> }
