@@ -39,10 +39,32 @@ def block_sentence(label: str, n_pooled: int) -> str:
             f"give ≥ {config.EVENT_MM:g} mm.")
 
 
-def disagree_sentence(label: str, n_ifs: int, n_aifs: int) -> str:
-    """'Models disagree on rain {label}: physics n of 50, AI n of 50.' (D29)"""
+MODEL_NAMES = ("physics", "AI")  # index = Disagreement.drier code: 0 IFS, 1 AIFS
+
+
+def disagree_explanation(kind: str, n_ifs: int, n_aifs: int, drier: int, med_ifs_mm: float, med_aifs_mm: float,
+                         shift: int = 0, other_n: int = 0, other_span: str = "", dist_km: float = 0.0,
+                         direction: str = "") -> str:
+    """The one place that says the models disagree, and how (D60). Only computed facts, no reasons."""
     m = config.EXPECTED_MEMBERS
-    return f"Models disagree on rain {label}: physics {n_ifs} of {m}, AI {n_aifs} of {m}."
+    lead = f"Physics and AI models disagree: physics {n_ifs} of {m}, AI {n_aifs} of {m}."
+    dry = MODEL_NAMES[drier]
+    md, mw = (med_aifs_mm, med_ifs_mm) if drier == 1 else (med_ifs_mm, med_aifs_mm)
+    if kind == "lighter":
+        how = (f"Both expect rain; the {dry} model's is lighter (median {_mm(md)} mm against {_mm(mw)} mm), "
+               f"so fewer of its forecasts reach {config.EVENT_MM:g} mm.")
+    elif kind == "timing":
+        how = (f"The {dry} model has this rain about 6 hours {'later' if shift > 0 else 'earlier'}: "
+               f"{other_n} of {m} in {other_span}.")
+    elif kind == "position":
+        how = f"The {dry} model puts this rain about {5 * max(1, round(dist_km / 5))} km {direction}: {other_n} of {m} there."
+    elif kind == "day":
+        how = "They agree on the day as a whole and differ on timing within it."
+    elif kind == "other":
+        how = "The two models expect different outcomes here."
+    else:
+        raise ValueError(f"no explanation for kind {kind!r}")
+    return f"{lead} {how}"
 
 
 def confidence_sentence(n_pooled: int, decided: bool, agree: bool, stable: bool, n_previous: int | None) -> str:
@@ -51,11 +73,9 @@ def confidence_sentence(n_pooled: int, decided: bool, agree: bool, stable: bool,
     decided/agree/stable come from process.confidence.confidence_checks; n_previous only gives the direction.
     The text says what the confidence level means, so it does not read as a second chance of rain.
     """
-    clauses = []
+    clauses = []  # "models disagree" is not repeated here; disagree_explanation says it once (D60)
     if not decided:
         clauses.append(f"not clear-cut ({n_pooled} of {POOLED})")
-    if not agree:
-        clauses.append("physics and AI models disagree")
     if not stable:
         if n_previous is None:
             clauses.append("no earlier forecast to compare")
@@ -209,13 +229,7 @@ def summary_48h(window: list[BlockCounts], day_counts: dict[date, int]) -> str:
             kept.append(MORE_LATER)
             break
         kept.append(p)
-    text = " ".join(kept)
-    m = config.EXPECTED_MEMBERS
-    gap, worst = max(((abs(b.n_ifs - b.n_aifs) * 100 / m, b) for b in window), key=lambda g: g[0])
-    note = (f"Models disagree on {short_span(worst.block, worst.block)}: physics {worst.n_ifs} of {m}, "
-            f"AI {worst.n_aifs} of {m}.")
-    if gap >= config.AGREE_MAX_DIFF_PCT and MORE_LATER not in kept and len(text) + 1 + len(note) <= limit:
-        text += " " + note
+    text = " ".join(kept)  # model disagreement is explained per block, not repeated here (D60)
     if len(text) > limit or not text:
         raise ValueError(f"summary of {len(text)} chars breaks the {limit}-char limit: {text!r}")
     return text

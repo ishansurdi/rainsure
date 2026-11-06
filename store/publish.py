@@ -20,7 +20,8 @@ from common.io import archive_stem
 from common.time import block_label, blocks_for_run, day_label
 from store import points
 from store.layers import layer_arrays, write_layers
-from store.products import AIFS, IFS, block_products, day_products, load_run, pooled_rain, window_day_counts
+from store.products import (AIFS, IFS, block_disagreement, block_products, day_products, load_run, pooled_rain,
+                            window_day_counts)
 
 log = logging.getLogger("publish")
 _NAME = re.compile(r"^tp_(ifs-ens|aifs-ens)_(\d{10})\.npz$")
@@ -66,7 +67,8 @@ def publish(archive_dir: Path, run_id: str, prev_id: str | None, site: Path) -> 
     layers = write_layers(layer_arrays(bp, dp), out / "layers")
     (out / "points").mkdir(parents=True, exist_ok=True)
     n_tiles = 0
-    for (ti, tj), tile in points.build_tiles(run_id, blocks, bp, dp, summary_counts):
+    dis = block_disagreement(bp, dp, blocks)
+    for (ti, tj), tile in points.build_tiles(run_id, blocks, bp, dp, summary_counts, dis):
         (out / "points" / f"t{ti}_{tj}.json").write_text(json.dumps(tile, ensure_ascii=False, separators=(",", ":")),
                                                         encoding="utf-8")
         n_tiles += 1

@@ -26,7 +26,8 @@ META = {
                 "label": "Thu afternoon · 11:30–17:30 IST"}],
     "days": [{"app_day": "2026-11-05", "label": "Thu · 05:30 Thu – 05:30 Fri IST"}],
 }
-CELL = {"b": [[0, 0, -1, "00" * 13, 0.0, 0.0, 0.0, 0.0], [30, 24, 20, "ff" * 13, 0.4, 9.8, 2.6, 2.1]], "bt": [[0, 1], [2, 3]],
+CELL = {"b": [[0, 0, -1, "00" * 13, 0.0, 0.0, 0.0, 0.0], [30, 24, 20, "ff" * 13, 0.4, 9.8, 2.6, 2.1]],
+        "bt": [[0, 1, -1], [2, 3, 6]],
         "d": [[30, 40, 2, 3, 0, 0, -1, 1.7, 2.4, 4.0, 5.5, 7.6, 3.6, 4.4, 5]], "dt": [[4, 1]], "s": [5, 6]}
 TILE = {"run": "2026110500", "tile": [0, 0], "strings": ["s0", "s1", "s2", "s3", "s4", "s5", "s6"],
         "cells": {"0_0": CELL, "0_1": CELL, "1_0": CELL, "1_1": CELL}}
@@ -62,7 +63,8 @@ class TestEndpoints(unittest.TestCase):
         self.assertTrue(p.blocks[0].past)
         self.assertFalse(p.blocks[1].past)
         self.assertEqual((p.blocks[1].n_pooled, p.blocks[1].n_previous, p.blocks[0].n_previous), (54, 20, None))
-        self.assertEqual((p.blocks[1].answer, p.blocks[1].settled), ("s2", "s3"))
+        self.assertEqual((p.blocks[1].answer, p.blocks[1].settled, p.blocks[1].models), ("s2", "s3", "s6"))
+        self.assertIsNone(p.blocks[0].models)
         self.assertEqual((p.blocks[1].p10_mm, p.blocks[1].p90_mm, p.blocks[1].median_ifs_mm,
                           p.blocks[1].median_aifs_mm), (0.4, 9.8, 2.6, 2.1))
         d = p.days[0]

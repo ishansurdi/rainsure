@@ -108,6 +108,12 @@ DECIDED_ABOVE_PCT = 80.0  # ... or P > 80 %
 AGREE_MAX_DIFF_PCT = 20.0  # models agree if |P_IFS - P_AIFS| < 20 points
 STABLE_MAX_DIFF_PCT = 20.0  # stable if |P_now - P_previous run| < 20 points
 CONFIDENCE_BY_POINTS: dict[int, str] = {0: "low", 1: "low", 2: "medium", 3: "high"}
+
+# --- How the models disagree, per 6-h block (DECISIONS.md D60). Rules are tried in this order; first match wins.
+# "Comparable" = within AGREE_MAX_DIFF_PCT of the wetter model's count here and at least LIKELY_FROM_PCT of 50.
+LIGHTER_MIN_MM = 1.0  # drier model's median >= 1.0 mm counts as "expects rain"; AIFS traces are < 0.1 mm / 6 h (D59)
+POSITION_RADIUS_KM = 50.0  # look for the drier model's rain at grid points up to ~2 cells away
+DISAGREE_KINDS = ("none", "lighter", "timing", "position", "day", "other")
 # What users read for each level: how settled the forecast is, kept apart from the chance of rain (DECISIONS.md D51).
 SETTLED_TEXT_BY_POINTS: dict[int, str] = {0: "Forecast unsettled", 1: "Forecast unsettled",
                                           2: "Forecast fairly settled", 3: "Forecast settled"}

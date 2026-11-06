@@ -10,8 +10,8 @@ from common import config
 from common.time import blocks_for_run
 from store.layers import layer_arrays
 from store.points import build_tiles, dots_hex
-from store.products import (AIFS, IFS, RunRain, align_steps, block_products, day_products, pooled_rain,
-                            window_day_counts)
+from store.products import (AIFS, IFS, RunRain, align_steps, block_disagreement, block_products, day_products,
+                            pooled_rain, window_day_counts)
 from store.publish import pick_runs
 
 UTC = timezone.utc
@@ -54,7 +54,8 @@ class TestProductsAndTile(unittest.TestCase):
         cls.bp, cls.dp = block_products(cur, None), day_products(cur, None)
         counts = [window_day_counts(pooled_rain(cur), s, config.NEXT_HOURS_BLOCKS, [b.app_day for b in BLOCKS])
                   for s in range(config.SUMMARY_START_BLOCKS)]
-        cls.tiles = dict(build_tiles("2026110500", BLOCKS, cls.bp, cls.dp, counts))
+        cls.tiles = dict(build_tiles("2026110500", BLOCKS, cls.bp, cls.dp, counts,
+                                     block_disagreement(cls.bp, cls.dp, BLOCKS)))
 
     def test_block_counts(self) -> None:
         self.assertEqual([int(self.bp[k][1, 0, 0]) for k in ("n_ifs", "n_aifs", "n_pooled")], [30, 0, 30])
@@ -71,12 +72,16 @@ class TestProductsAndTile(unittest.TestCase):
         cell, s = tile["cells"]["0_0"], tile["strings"]
         # pooled 100: 70 zeros + 30 threes -> p10 0.0, p90 3.0 (index 89.1); IFS median 3.0, AIFS median 0.0
         self.assertEqual(cell["b"][1], [30, 0, -1, "fffffffc" + "00" * 9, 0.0, 3.0, 3.0, 0.0])
+        # "models disagree" appears once, in the explanation; AI has no rain before/after or nearby and the day
+        # disagrees too (30 vs 0 of 50) -> "other"
         self.assertEqual(s[cell["bt"][1][0]],
-                         "Models disagree on rain Thu afternoon · 11:30–17:30 IST: physics 30 of 50, AI 0 of 50.")
-        self.assertEqual(s[cell["bt"][1][1]], "Forecast unsettled: not clear-cut (30 of 100), physics and AI "
-                                              "models disagree, no earlier forecast to compare.")
-        self.assertEqual(s[cell["s"][0]], "Rain unlikely until Thu afternoon. Rain likely Thu 11:30–17:30 IST. "
-                                          "Models disagree on Thu 11:30–17:30 IST: physics 30 of 50, AI 0 of 50.")
+                         "Rain likely Thu afternoon · 11:30–17:30 IST: 30 of 100 forecasts give ≥ 2.5 mm.")
+        self.assertEqual(s[cell["bt"][1][1]], "Forecast unsettled: not clear-cut (30 of 100), "
+                                              "no earlier forecast to compare.")
+        self.assertEqual(s[cell["bt"][1][2]], "Physics and AI models disagree: physics 30 of 50, AI 0 of 50. "
+                                              "The two models expect different outcomes here.")
+        self.assertEqual(cell["bt"][0][2], -1)  # Thu morning: both dry, they agree
+        self.assertEqual(s[cell["s"][0]], "Rain unlikely until Thu afternoon. Rain likely Thu 11:30–17:30 IST.")
         # day: IFS 30 of 50 at 3 mm -> median of 50 = 3.0; pooled: 70 zeros + 30 threes -> p50 0, p75 3.0
         self.assertEqual(cell["d"][0][:2], [30, 0])
         self.assertEqual(cell["d"][0][6:], [-1, 0.0, 0.0, 0.0, 3.0, 3.0, 3.0, 0.0, 70])

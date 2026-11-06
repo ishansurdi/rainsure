@@ -12,6 +12,7 @@ from common.io import read_archive
 from process.aggregate import day_totals_mm
 from process.confidence import confidence_checks
 from process.deaccumulate import block_rain_mm
+from process.disagree import Disagreement, classify
 from process.ensemble import members_at_least, percent, pooled
 
 IFS, AIFS = "ifs-ens", "aifs-ens"
@@ -118,6 +119,19 @@ def day_products(cur: RunRain, prev: RunRain | None) -> xr.Dataset:
                                100.0 * n_prev / n_pool.attrs["members"])
     out.update({k: checks[k] for k in ("decided", "agree", "stable")})
     return xr.Dataset(out)
+
+
+def block_disagreement(bp: xr.Dataset, dp: xr.Dataset, blocks: list) -> Disagreement:
+    """How the models disagree in each block (process.disagree, D60), with each block's app-day agreement."""
+    g = lambda v: bp[v].transpose("step_h", "latitude", "longitude").values  # noqa: E731
+    days = [str(d)[:10] for d in dp["app_day"].values]
+    day_agree_grid = dp["agree"].transpose("app_day", "latitude", "longitude").values
+    day_agree = np.zeros(bp["n_ifs"].shape, bool)  # partial first day of a 12z run: no day total -> False
+    for k, b in enumerate(blocks):
+        if b.app_day.isoformat() in days:
+            day_agree[k] = day_agree_grid[days.index(b.app_day.isoformat())]
+    return classify(g("n_ifs"), g("n_aifs"), g("median_ifs_mm"), g("median_aifs_mm"), day_agree,
+                    bp["latitude"].values, abs(float(bp["latitude"].values[0] - bp["latitude"].values[1])))
 
 
 def window_day_counts(rain_100: xr.DataArray, start: int, n_blocks: int, app_days: list) -> dict:

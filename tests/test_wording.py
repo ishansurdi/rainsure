@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from common import config
 from common.time import blocks_for_run
-from process.wording import (BlockCounts, block_sentence, confidence_sentence, day_sentence, disagree_sentence,
+from process.wording import (BlockCounts, block_sentence, confidence_sentence, day_sentence, disagree_explanation,
                              prob_word, rain_category, summary_48h)
 
 BLOCKS = blocks_for_run(datetime(2026, 11, 5, 0, tzinfo=timezone.utc), n_full_days=2)  # Thu morning .. Fri night
@@ -47,12 +47,29 @@ class TestRainCategory(unittest.TestCase):
 
 
 class TestSentences(unittest.TestCase):
-    def test_block_and_disagree(self) -> None:
+    def test_block_sentence(self) -> None:
         label = "Thu afternoon · 11:30–17:30 IST"
         self.assertEqual(block_sentence(label, 54),
                          "Rain very likely Thu afternoon · 11:30–17:30 IST: 54 of 100 forecasts give ≥ 2.5 mm.")
-        self.assertEqual(disagree_sentence(label, 1, 28),
-                         "Models disagree on rain Thu afternoon · 11:30–17:30 IST: physics 1 of 50, AI 28 of 50.")
+
+    def test_disagreement_explained_once_by_kind(self) -> None:
+        lead = "Physics and AI models disagree: physics 30 of 50, AI 5 of 50. "
+        self.assertEqual(disagree_explanation("lighter", 30, 5, 1, 3.1, 1.8),
+                         lead + "Both expect rain; the AI model's is lighter (median 1.8 mm against 3.1 mm), "
+                                "so fewer of its forecasts reach 2.5 mm.")
+        self.assertEqual(disagree_explanation("timing", 30, 5, 1, 3.1, 0.2, shift=1, other_n=28,
+                                              other_span="Fri 17:30–23:30 IST"),
+                         lead + "The AI model has this rain about 6 hours later: 28 of 50 in Fri 17:30–23:30 IST.")
+        self.assertEqual(disagree_explanation("position", 5, 30, 0, 0.0, 4.0, other_n=27, dist_km=27.8,
+                                              direction="north"),
+                         "Physics and AI models disagree: physics 5 of 50, AI 30 of 50. "
+                         "The physics model puts this rain about 30 km north: 27 of 50 there.")
+        self.assertEqual(disagree_explanation("day", 30, 5, 1, 3.1, 0.0),
+                         lead + "They agree on the day as a whole and differ on timing within it.")
+        self.assertEqual(disagree_explanation("other", 30, 5, 1, 3.1, 0.0),
+                         lead + "The two models expect different outcomes here.")
+        with self.assertRaises(ValueError):
+            disagree_explanation("none", 1, 1, 0, 0.0, 0.0)
 
     def test_settled_wording(self) -> None:
         self.assertEqual(confidence_sentence(54, False, True, False, 20),
@@ -61,7 +78,7 @@ class TestSentences(unittest.TestCase):
         self.assertEqual(confidence_sentence(90, True, True, False, None),
                          "Forecast fairly settled: no earlier forecast to compare.")
         self.assertEqual(confidence_sentence(10, True, False, False, 40),
-                         "Forecast unsettled: physics and AI models disagree, down 30 points since the previous forecast.")
+                         "Forecast unsettled: down 30 points since the previous forecast.")  # disagreement said once, elsewhere
 
     def test_day(self) -> None:
         label = "Thu · 05:30 Thu – 05:30 Fri IST"
@@ -101,7 +118,7 @@ class TestSummary48h(unittest.TestCase):
         w = _window([(3, 3), (0, 11), (2, 0), (18, 10), (10, 12), (1, 28), (4, 8), (14, 16)])
         self.assertEqual(summary_48h(w, NO_SPREAD),
                          "Rain unlikely until Thu night. Then on and off until Sat 05:30 IST: rain likely in "
-                         "3 of 8 blocks. Models disagree on Fri 11:30–17:30 IST: physics 1 of 50, AI 28 of 50.")
+                         "3 of 8 blocks.")  # no disagreement note in the summary any more (D60)
 
     def test_wet_from_the_start(self) -> None:
         w = _window([(40, 40), (0, 0), (20, 20), (0, 0), (20, 20), (0, 0), (0, 0), (0, 0)])
