@@ -31,21 +31,20 @@ much the forecast changed since the previous run.
 
 ## Architecture
 
-```
-ECMWF open data (IFS ens + AIFS ens, 00z/12z, 0.25°)
-   │  byte-range download of tp only, Google mirror first (ingest/)
-   ▼
-GitHub Actions, hourly (GitHub schedule + cron-job.org dispatch)
-   ├─ archive: every run's India tp, all 50+50 members → GitHub release "archive" (~65 MB per run)
-   │          validated first: members, steps, NaN, accumulation never drops beyond GRIB packing error,
-   │          6-h amounts under the WMO 12-h world record (D48)
-   └─ publish: newest complete run → de-accumulate → blocks/days → counts, percentiles, checks,
-              disagreement rules, finished sentences (process/, store/)
-   ▼
-GitHub Pages: static frontend + data (point tiles with sentences, gzip map layers, latest.json)
-   ├─ frontend (Vite + TypeScript + MapLibre): reads tiles and layers directly, never computes forecast values
-   └─ API (FastAPI on Render): reads the same JSON; /meta, /point, /docs; not needed by the app
-```
+![rain-trust system architecture: ECMWF open data, hourly GitHub Actions pipeline, GitHub Pages and the API on Render, users](docs/rain-trust-architecture-Architecture.drawio.svg)
+
+- **Hourly trigger:** GitHub's schedule plus a cron-job.org dispatch, because GitHub skips scheduled runs (D61, D64).
+- **Archive job:** byte-range download of `tp` only (Google Cloud mirror first); every 00z/12z run's India `tp` for all 50 + 50 members goes to the GitHub release "archive" (~65 MB per
+  run), after checks: members, steps, NaN, accumulation never drops beyond GRIB packing error, 6-h amounts under the
+  WMO 12-h world record (D48). A bad run is not published; the previous one stays live.
+- **Publish job:** newest complete run → de-accumulate → blocks/days → counts, percentiles, checks, disagreement rules,
+  finished sentences (`process/`, `store/`) → point tiles, gzip map layers and `latest.json` on GitHub Pages.
+- **Frontend** reads those files directly and never computes forecast values; the **API** reads the same JSON
+  (`/meta`, `/point`, `/docs`) and the app does not need it.
+
+### From forecast to answer
+
+![Data flow for every new forecast run: download, convert to mm, quality check, 6-hour blocks, count forecasts, trust check, plain answer, map and answer](docs/rain-trust-architecture-Data%20flow.drawio.svg)
 
 Modules depend downwards only: `api` → `store` → `process` → `common`; `ingest` → `process`/`common`.
 Tests: `python -m unittest discover -s tests` (pipeline, 112 tests) and `npm --prefix frontend test` (frontend).
