@@ -1,7 +1,7 @@
 # PLAN.md — rain-trust
 
-Clock started: 2026-11-05 ~04:00 UTC (09:30 IST), first prompt of the session.
-Hard deadline: final commit by **2026-11-08 04:00 UTC (09:30 IST)**.
+Clock started: 2026-11-05T03:51:40Z (09:21:40 IST), first prompt of the session.
+Hard deadline: final commit by **2026-11-08T03:51:40Z (Sun 8 Nov 09:21:40 IST)**, 72 hours after the first prompt.
 Deliverables: public repo, live app, video.
 Status: approved; P0 and P1 done, P2 in progress.
 
